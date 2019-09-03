@@ -7,8 +7,6 @@ using Vector2 = RVO.Vector2;
 
 public class NavigationPipeline
 {
-    public const float NAV_TICK_TIME = 0.2f;
-    public const int MAX_REQ_COUNT_PRE_FRAME = 3;
     private Queue<NavigationRequest> _navReqQueue;
     private Dictionary<Guid, NavHandleData> _processingData;
     private List<NavigationBehaviour> _navigationBehaviourList;
@@ -52,7 +50,7 @@ public class NavigationPipeline
         _navReqQueue = new Queue<NavigationRequest>(10);
         _processingData = new Dictionary<Guid, NavHandleData>();
         _navigationBehaviourList = new List<NavigationBehaviour>();
-        Simulator.Instance.setTimeStep(NAV_TICK_TIME);
+        Simulator.Instance.setTimeStep(NavHandleData.NAV_TICK_TIME);
         GetRVOObstacles();
     }
 
@@ -69,7 +67,7 @@ public class NavigationPipeline
     public void Update()
     {
         int handleCount = 0;
-        while (_navReqQueue.Count != 0 && handleCount < MAX_REQ_COUNT_PRE_FRAME)
+        while (_navReqQueue.Count != 0 && handleCount < NavHandleData.MAX_REQ_COUNT_PRE_FRAME)
         {
             handleCount++;
             NavigationRequest req = _navReqQueue.Dequeue();
@@ -83,7 +81,7 @@ public class NavigationPipeline
         foreach (Guid id in _loopProcessingKeyList)
         {
             _loopNavHandleData = _processingData[id];
-            if (Time.time - _loopNavHandleData.lastTickTime > NAV_TICK_TIME)
+            if (Time.time - _loopNavHandleData.lastTickTime > NavHandleData.NAV_TICK_TIME)
             {
                 _loopNavHandleData.lastTickTime = Time.time;
                 Process(_loopNavHandleData);

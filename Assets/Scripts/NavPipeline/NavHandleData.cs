@@ -1,6 +1,11 @@
-﻿using System.Collections.Generic;
-using RVO;
+﻿using RVO;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+// todo 1.主体移动速度应该根据所有单位动态决定 等最慢的
+// todo 2.如果理想的编队位置恰好处于了障碍物中 应该怎么处理
+// todo 3.个体单位达到当前对应位置后不再移动
 
 /// <summary>
 /// 处理寻路请求的中间数据对象
@@ -9,8 +14,11 @@ public class NavHandleData
 {
     #region Some Const
     public const float CHECKED_DISTANCE = 1.5f;
-
-
+    public const float ENTITY_MAX_SPEED = 3.0f;
+    public const float ENTITY_COLLIDER_RADIUS = 1.5F;
+    public const float GROUP_MIN_SPEED = 1.5F;
+    public const float NAV_TICK_TIME = 0.2f;
+    public const int MAX_REQ_COUNT_PRE_FRAME = 3;
     #endregion
 
     /// <summary>
@@ -90,8 +98,10 @@ public class NavHandleData
             for (int i = 0; i < group.individualList.Count; i++)
             {
                 _childEntityDataList.Add(new NavHandleData(req, group.individualList[i]));
-                Simulator.Instance.addAgent(group.individualList[i].controlledAgent.GetCurrentPosition().ToRVOVec2()
-                , 1f, 10, 2f, 4f, 1.5f, 6f, new RVO.Vector2(0, 0));
+                // 将成员添加进RVO的模拟列表中
+                Simulator.Instance.addAgent(
+                    group.individualList[i].controlledAgent.GetCurrentPosition().ToRVOVec2()
+                , ENTITY_COLLIDER_RADIUS, 10, 2f, 4f, 1.5f, NavEntity.GetMaxSpeed(group.individualList[i].entityID)*2f, new RVO.Vector2(0, 0));
             }
         }
         destination = req.destination;
@@ -134,20 +144,28 @@ public class NavHandleData
         if (wayPointList != null && nextWaypointIndex < wayPointList.Count)
         {
             return (wayPointList[nextWaypointIndex].XZ() - NavEntity.GetCurrentPosition(entityID).XZ()).normalized
-                 * NavEntity.GetMaxSpeed(entityID);
+                 //* NavEntity.GetMaxSpeed(entityID);
+                 * GetChildMinSpeed();
         }
         return Vector3.zero;
     }
 
-    public Vector3 GetChildAverageVelocity()
+    public float GetChildMinSpeed()
     {
-        Vector3 v= Vector3.zero;
+        if (!isGroup)
+        {
+            return entity.maxSpeed;
+        }
+        float minSqrSpeed = Single.PositiveInfinity;
         for (int i = 0; i < _childEntityDataList.Count; i++)
         {
-            v += _childEntityDataList[i].realVelocity;
+            float sqrSpeed = _childEntityDataList[i].realVelocity.sqrMagnitude;
+            if (sqrSpeed < minSqrSpeed)
+            {
+                minSqrSpeed = sqrSpeed;
+            }
         }
-        v /= _childEntityDataList.Count;
-        return v;
+        return Mathf.Max(Mathf.Sqrt(minSqrSpeed),GROUP_MIN_SPEED);
     }
 
     private bool CheckChildrenReached()
@@ -173,8 +191,6 @@ public class NavHandleData
         }
     }
 
-    // todo 1.主体移动速度应该根据所有单位动态决定 等最慢的
-    // todo 2.如果理想的编队位置恰好处于了障碍物中 应该怎么处理
     public bool HasReachedTarget()
     {
         return Vector3.Distance(NavEntity.GetCurrentPosition(entityID).XZ(), destination.XZ()) < CHECKED_DISTANCE  && CheckChildrenReached();

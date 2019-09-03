@@ -22,14 +22,14 @@ public class SlotAssignmentBehaviour : NavigationBehaviour
             }
 
             Vector3 currentPosition = NavEntity.GetCurrentPosition(navHandleData.entityID);
-            Vector3 nextPosition = currentPosition + navHandleData.realVelocity * NavigationPipeline.NAV_TICK_TIME;
+            Vector3 nextPosition = currentPosition + navHandleData.realVelocity * NavHandleData.NAV_TICK_TIME;
             _cachedGroup.AssignSlots(nextPosition, navHandleData.realVelocity.normalized);
             _childData = navHandleData.GetChildNavData();
             for (int i = 0; i < _childData.Count; i++)
             {
                 _childData[i].slotPositionWhenAsChild = _cachedGroup.GetSlotInfoByEntityID(_childData[i].entityID).slotWorldPosition;
             }
-            Debug.DrawLine(currentPosition,nextPosition,Color.magenta, NavigationPipeline.NAV_TICK_TIME);
+            Debug.DrawLine(currentPosition,nextPosition,Color.magenta, NavHandleData.NAV_TICK_TIME);
         }
     }
 }

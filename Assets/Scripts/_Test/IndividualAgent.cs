@@ -20,6 +20,10 @@ public class IndividualAgent : MonoBehaviour,INavAgent
     public void AgentMove(MovementRequest movementReq)
     {
         transform.position += movementReq.velocity * Time.deltaTime;
+        if (movementReq.velocity != Vector3.zero)
+        {
+            transform.forward = Vector3.Lerp(transform.forward, movementReq.velocity.normalized, Time.deltaTime);
+        }
     }
     public void InitAgent(Vector3 pos)
     {

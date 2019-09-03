@@ -1,7 +1,6 @@
 ﻿using System;
-using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public interface INavAgent
 {
@@ -19,7 +18,7 @@ public abstract class NavEntity
 
     public INavAgent controlledAgent;
 
-    public readonly float maxSpeed = 3f;
+    public readonly float maxSpeed = NavHandleData.ENTITY_MAX_SPEED;
 
     public NavEntity(INavAgent controlledTarget)
     {
