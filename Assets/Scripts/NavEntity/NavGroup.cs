@@ -30,6 +30,7 @@ public class NavGroup : NavEntity
         get { return _formationPattern != null; }   
     }
     private FormationPattern _formationPattern;
+    private Dictionary<Guid, SlotInfo> _lookUpTable = new Dictionary<Guid, SlotInfo>();
     public void AssignFormation(FormationPattern formationPattern)
     {
         _formationPattern = formationPattern;
@@ -49,12 +50,14 @@ public class NavGroup : NavEntity
         for (int i = 0; i < individualList.Count; i++)
         {
             _formationPattern.slotInfoList[i].entityID = individualList[i].entityID;
+            _lookUpTable[individualList[i].entityID] = _formationPattern.slotInfoList[i];
         }
     }
 
     public SlotInfo GetSlotInfoByEntityID(Guid id)
     {
-        return _formationPattern.slotInfoList.Find(info => info.entityID == id);
+        return _lookUpTable[id];
+        //return _formationPattern.slotInfoList.Find(info => info.entityID == id);
     }
 
     public void DebugDraw()

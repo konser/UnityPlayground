@@ -37,11 +37,6 @@ public class NavHandleData
     public NavEntity entity;
 
     /// <summary>
-    /// 是否为组对象
-    /// </summary>
-    public readonly bool isGroup;
-
-    /// <summary>
     /// 起点 请求寻路时所在的位置
     /// </summary>
     public readonly Vector3 startPosition;
@@ -52,16 +47,6 @@ public class NavHandleData
     public readonly Vector3 destination;
 
     /// <summary>
-    /// 寻路上一次的Tick时间记录
-    /// </summary>
-    public float lastTickTime;
-
-    /// <summary>
-    /// 作为组的成员时在编队中所在的位置
-    /// </summary>
-    public Vector3 slotPositionWhenAsChild;
-
-    /// <summary>
     /// 寻路路径点Index
     /// </summary>
     public int nextWaypointIndex;
@@ -70,6 +55,25 @@ public class NavHandleData
     /// 寻路路径点
     /// </summary>
     public List<Vector3> wayPointList;
+
+    /// <summary>
+    /// 寻路上一次的Tick时间记录
+    /// </summary>
+    public float lastTickTime;
+
+    #region Group Memeber
+    /// <summary>
+    /// 是否为组对象
+    /// </summary>
+    public readonly bool isGroup;
+
+    /// <summary>
+    /// 作为组的成员时在编队中所在的位置
+    /// </summary>
+    public Vector3 slotPositionWhenAsChild;
+
+
+    #endregion
 
     /// <summary>
     /// 该对象的速度 最终会根据该值进行移动
