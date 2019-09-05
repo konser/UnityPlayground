@@ -31,7 +31,9 @@ public class FormationFollowBehaviour : NavigationBehaviour
                 }
 
                 _childData[i].realVelocity = (_slotInfo.slotWorldPosition - NavEntity.GetCurrentPosition(_childData[i].entityID)).normalized * speed;
-                Simulator.Instance.setAgentPrefVelocity(i,_childData[i].realVelocity.ToRVOVec2());
+                Simulator.Instance.setAgentPrefVelocity(i, _childData[i].realVelocity.ToRVOVec2());
+                //var dir = navHandleData.destination.XZ() - NavEntity.GetCurrentPosition(_childData[i].entityID).XZ();
+                //Simulator.Instance.setAgentPrefVelocity(i, RVOMath.normalize(dir.ToRVOVec2()));
             }
         }
     }

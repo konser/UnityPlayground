@@ -61,7 +61,7 @@ public class GroupAgent : MonoBehaviour,INavAgent
         transform.position += movementReq.velocity * Time.deltaTime;
         if (movementReq.velocity != Vector3.zero)
         {
-            transform.forward = Vector3.Lerp(transform.forward, movementReq.velocity.normalized, Time.deltaTime);
+            transform.forward = Vector3.Lerp(transform.forward, movementReq.velocity.normalized, Time.deltaTime/3f);
         }
         group.DebugDraw();
     }

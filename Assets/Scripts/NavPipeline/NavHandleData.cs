@@ -13,10 +13,10 @@ using UnityEngine;
 public class NavHandleData
 {
     #region Some Const
-    public const float CHECKED_DISTANCE = 1.5f;
-    public const float ENTITY_MAX_SPEED = 3.0f;
-    public const float ENTITY_COLLIDER_RADIUS = 1.5F;
-    public const float GROUP_MIN_SPEED = 1.5F;
+    public const float CHECKED_DISTANCE = 0.5f;
+    public const float ENTITY_MAX_SPEED = 4.0f;
+    public const float ENTITY_COLLIDER_RADIUS = 4.5f;
+    public const float GROUP_MIN_SPEED = 1.5f;
     public const float NAV_TICK_TIME = 0.2f;
     public const int MAX_REQ_COUNT_PRE_FRAME = 3;
     #endregion
@@ -105,7 +105,7 @@ public class NavHandleData
                 // 将成员添加进RVO的模拟列表中
                 Simulator.Instance.addAgent(
                     group.individualList[i].controlledAgent.GetCurrentPosition().ToRVOVec2()
-                , ENTITY_COLLIDER_RADIUS, 10, 2f, 4f, 1.5f, NavEntity.GetMaxSpeed(group.individualList[i].entityID)*2f, new RVO.Vector2(0, 0));
+                , ENTITY_COLLIDER_RADIUS, 8, 1f,2f, 1f, NavEntity.GetMaxSpeed(group.individualList[i].entityID), new RVO.Vector2(0, 0));
             }
         }
         destination = req.destination;
