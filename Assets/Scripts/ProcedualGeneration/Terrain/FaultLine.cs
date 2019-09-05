@@ -3,8 +3,8 @@ using System.Collections;
 
 public class FaultLine : TerrainBase
 {
+    public bool showProcessing;
     public int numFaultLine;
-
     public float faultChange;
     // Use this for initialization
     IEnumerator Start()
@@ -12,7 +12,10 @@ public class FaultLine : TerrainBase
         InitFlat();
         for (int i = 0; i < numFaultLine; i++)
         {
-            yield return new WaitForSeconds(0.2f);
+            if (showProcessing)
+            {
+                yield return new WaitForSeconds(0.2f);
+            }
             int x0 = Random.Range(0, width);
             int z0 = Random.Range(0, length);
             int x1 = Random.Range(0, width);

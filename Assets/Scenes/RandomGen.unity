@@ -211,6 +211,36 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &503354918
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 503354919}
+  m_Layer: 0
+  m_Name: GameObject (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &503354919
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 503354918}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &836658427
 GameObject:
   m_ObjectHideFlags: 0
@@ -306,6 +336,7 @@ GameObject:
   - component: {fileID: 879746962}
   - component: {fileID: 879746964}
   - component: {fileID: 879746965}
+  - component: {fileID: 879746966}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -328,6 +359,7 @@ MonoBehaviour:
   width: 256
   length: 256
   maxHeight: 256
+  saveToPNG: 0
 --- !u!4 &879746963
 Transform:
   m_ObjectHideFlags: 0
@@ -357,6 +389,7 @@ MonoBehaviour:
   width: 256
   length: 256
   maxHeight: 256
+  saveToPNG: 0
   heightDifference: 64
 --- !u!114 &879746965
 MonoBehaviour:
@@ -365,7 +398,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 879746961}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eac25e655bfc4e909a1966755760bd18, type: 3}
   m_Name: 
@@ -373,5 +406,26 @@ MonoBehaviour:
   width: 128
   length: 128
   maxHeight: 128
+  saveToPNG: 0
+  showProcessing: 0
   numFaultLine: 200
-  faultChange: 4
+  faultChange: 2
+--- !u!114 &879746966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879746961}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89bb8aa8cd08450ab905efa0e42d9546, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  width: 200
+  length: 200
+  maxHeight: 100
+  saveToPNG: 0
+  numCircle: 100
+  radius: 30
+  circleHeightIncrement: 5

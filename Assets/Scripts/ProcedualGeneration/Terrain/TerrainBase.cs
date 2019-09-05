@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 public class TerrainBase : MonoBehaviour
 {
@@ -42,4 +45,42 @@ public class TerrainBase : MonoBehaviour
         matBlock.SetColor("_MainColor", color);
         render.SetPropertyBlock(matBlock);
     }
+
+    public bool saveToPNG;
+    public void SetColor()
+    {
+        if (saveToPNG == false)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    SetColor(i, j);
+                }
+            }
+        }
+        else
+        {
+            Save();
+        }
+    }
+
+    [Button]
+    public void Save()
+    {
+        Texture2D texture = new Texture2D(width,length,TextureFormat.ARGB32,false);
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < length; z++)
+            {
+                float ratio = heightMap[x, z] / maxHeight;
+                color = new Color(ratio, ratio, ratio, 1f);
+                texture.SetPixel(x,z,color);
+            }
+        }
+        byte[] bytes = texture.EncodeToPNG();
+        File.WriteAllBytes(Application.dataPath + "/test.png",bytes);
+        Debug.Log("Saved! " + bytes.Length);
+    }
+
 }
