@@ -83,7 +83,7 @@
                 float4 emiColor = tex2D(_EmissionTex, input.uv).r * _EmiColor * _EmiVal;
 
                 float4 c = tex2D(_MainTex,input.uv);
-                return c*(ambColor + diffColor + specColor) + emiColor;
+                return c*(ambColor+ diffColor + specColor) + emiColor;
             }
             ENDCG
         }
