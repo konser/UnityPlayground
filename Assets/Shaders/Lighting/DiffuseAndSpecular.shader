@@ -48,8 +48,8 @@
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz-worldPos.xyz);                
                 float3 reflectLightDir = reflect(-lightDir,o.normal);
                 float dot_r_v = max(0.0,dot(viewDir,reflectLightDir));
-                float4 spec = ceil(dot_n_l)*_LightColor0*_SpecularColor*pow(dot_r_v,_Shininess);
-                
+                float4 spec = _LightColor0*_SpecularColor*pow(dot_r_v,_Shininess);
+
                 o.color = diff + spec;
 
                 return o;
