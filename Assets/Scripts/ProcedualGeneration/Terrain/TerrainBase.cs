@@ -79,7 +79,7 @@ public class TerrainBase : MonoBehaviour
             }
         }
         byte[] bytes = texture.EncodeToPNG();
-        File.WriteAllBytes(Application.dataPath + "/test.png",bytes);
+        File.WriteAllBytes(Application.dataPath + $"/test_{Random.Range(1,9999)}.png",bytes);
         Debug.Log("Saved! " + bytes.Length);
     }
 
