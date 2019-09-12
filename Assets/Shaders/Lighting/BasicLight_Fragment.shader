@@ -42,6 +42,7 @@
             };
 
             sampler2D _MainTex;
+			float4 _MainTex_ST;
             float _Diffuse;
             float4 _DifColor;
 
@@ -59,7 +60,7 @@
             {
                 v2f output;
                 output.pos = UnityObjectToClipPos(input.vertex);
-                output.uv = input.texcoord;
+                output.uv = TRANSFORM_TEX(input.texcoord, _MainTex);
                 output.normal = normalize(UnityObjectToWorldNormal(input.normal));
                 output.worldPos = mul(unity_ObjectToWorld,input.vertex);
                 return output;
