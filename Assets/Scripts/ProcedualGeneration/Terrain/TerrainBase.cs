@@ -1,9 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using Sirenix.OdinInspector;
+﻿using System.IO;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 
 public class TerrainBase : MonoBehaviour
 {
@@ -65,7 +61,6 @@ public class TerrainBase : MonoBehaviour
         }
     }
 
-    [Button]
     public void Save()
     {
         Texture2D texture = new Texture2D(width,length,TextureFormat.ARGB32,false);

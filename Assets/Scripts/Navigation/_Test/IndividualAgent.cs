@@ -30,7 +30,6 @@ public class IndividualAgent : MonoBehaviour,INavAgent
         this.transform.position = pos;
     }
 
-    [Sirenix.OdinInspector.Button]
     public void Test()
     {
        NavManager.instance.RequestNavigation(individual,Destination.instance.GetPosition());

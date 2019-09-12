@@ -8,7 +8,6 @@ public class FormationTest : MonoBehaviour
     public int totalAgent;
     public int rowCount;
     public float radius;
-    [Sirenix.OdinInspector.Button]
     public void Test()
     {
         f = new SquareFormation();

@@ -46,3 +46,6 @@ sysinfo.txt
 
 # Crashlytics generated file
 crashlytics-build.properties
+Assets/Plugins/
+Assets/ThirdParty.meta
+Assets/ThirdParty/

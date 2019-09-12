@@ -70,7 +70,6 @@ public class GroupAgent : MonoBehaviour,INavAgent
         this.transform.position = pos;
     }
 
-    [Sirenix.OdinInspector.Button]
     public void Test()
     {
         NavManager.instance.RequestNavigation(group, Destination.instance.GetPosition());
