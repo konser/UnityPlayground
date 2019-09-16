@@ -36,6 +36,7 @@
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
+				o.uv = v.uv;
                 return o;
             }
 
