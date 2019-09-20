@@ -31,7 +31,7 @@ Shader "Custom/Tools/ShowDepth"
 
             float4 frag(v2f input) : SV_TARGET
 			{
-                float inv = 1 - input.depth;
+                float inv = input.depth;
                 return float4(inv,inv,inv,1);
             }
             ENDCG

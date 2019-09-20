@@ -49,3 +49,4 @@ crashlytics-build.properties
 Assets/Plugins/
 Assets/ThirdParty.meta
 Assets/ThirdParty/
+.cubemap,.png

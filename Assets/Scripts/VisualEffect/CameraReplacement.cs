@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteInEditMode]
 public class CameraReplacement : MonoBehaviour
@@ -20,7 +17,7 @@ public class CameraReplacement : MonoBehaviour
     {
         if (ReplacementShader != null)
         {
-            GetComponent<Camera>().SetReplacementShader(ReplacementShader,"");
+            GetComponent<Camera>().SetReplacementShader(ReplacementShader,"Transparent");
         }
     }
 

@@ -14,6 +14,7 @@ TagManager:
   - UI
   - 
   - 
+  - TransparentWindow
   - 
   - 
   - 
@@ -36,8 +37,7 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
+  - Obstacle
   m_SortingLayers:
   - name: Default
     uniqueID: 0
