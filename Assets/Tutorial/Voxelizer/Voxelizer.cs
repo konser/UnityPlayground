@@ -7,7 +7,7 @@ using UnityEngine;
 public class VoxelBound
 {
     public AABBBoundBox boundBox;
-    public bool isBound;
+    public bool overlapWithTriangle;
 }
 
 public class TriangleInfo
@@ -38,8 +38,23 @@ public class Voxelizer : MonoBehaviour
     {
         InitVoxelArray();
         InitTriangleList();
+        IntersectTest();
+        Display();
     }
 
+    private void Display()
+    {
+        Vector3 size = _halfVector * 2;
+        foreach (VoxelBound bound in _voxelArray)
+        {
+            if (bound.overlapWithTriangle)
+            {
+                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.transform.localScale = size;
+                go.transform.position = bound.boundBox.center;
+            }
+        }
+    }
     public void InitVoxelArray()
     {
         Vector3 originPos = voxelBoundBox.bounds.min;
@@ -55,7 +70,7 @@ public class Voxelizer : MonoBehaviour
                     Vector3 minPos = originPos +  new Vector3(_halfVector.x*2*i, _halfVector.y * 2 * j, _halfVector.z * 2 * z);
                     _voxelArray[i, j, z] = new VoxelBound()
                     {
-                        isBound =  false,
+                        overlapWithTriangle =  false,
                         boundBox =  new AABBBoundBox(minPos,minPos + 2*_halfVector)
                     };
                 }
@@ -97,38 +112,81 @@ public class Voxelizer : MonoBehaviour
         }
     }
 
+    private Vector3[] _etestCache = new Vector3[9];
     public void IntersectTest()
     {
         Vector3 e0 = Vector3.right;
         Vector3 e1 = Vector3.up;
         Vector3 e2 = Vector3.forward;
-        foreach (VoxelBound voxelBound in _voxelArray)
+        foreach (TriangleInfo triangle in _triangleList)
         {
-            foreach (TriangleInfo triangle in _triangleList)
+            foreach (VoxelBound voxelBound in _voxelArray)
             {
+                // 已经相交的 不再检查
+                if (voxelBound.overlapWithTriangle == true)
+                {
+                    continue;
+                }
+
+                // Triangle , Voxel AABB Test
+                if (!voxelBound.boundBox.Overlap(triangle.boundBox))
+                {
+                    continue;
+                }
+
                 Vector3 v0 = triangle.p1 - voxelBound.boundBox.center;
                 Vector3 v1 = triangle.p2 - voxelBound.boundBox.center;
                 Vector3 v2 = triangle.p3 - voxelBound.boundBox.center;
                 Vector3 f0 = v1 - v0, f1 = v2 - v1, f2 = v0 - v2;
 
 
-                // Triangle Minium AABB Test
-
-
                 // Normal Plane Test
+                //float d = Vector3.Dot(v0, triangle.normal);
+                //float signedDistance = d;
+                //float e = voxelBound.boundBox.half.x * Mathf.Abs(triangle.normal.x) +
+                //          voxelBound.boundBox.half.y * Mathf.Abs(triangle.normal.y) +
+                //          voxelBound.boundBox.half.z * Mathf.Abs(triangle.normal.z);
+                //if (signedDistance - e > 0 || signedDistance - e < 0)
+                //{
+                //    continue;
+                //}
 
                 // Nine other tests
-                Vector3 a00 = Vector3.Cross(e0, f0);
-                Vector3 a01 = Vector3.Cross(e0, f1);
-                Vector3 a02 = Vector3.Cross(e0, f2);
+                _etestCache[0] = Vector3.Cross(e0, f0);
+                _etestCache[1] = Vector3.Cross(e0, f1);
+                _etestCache[2] = Vector3.Cross(e0, f2);
+                _etestCache[3] = Vector3.Cross(e1, f0);
+                _etestCache[4] = Vector3.Cross(e1, f1);
+                _etestCache[5] = Vector3.Cross(e1, f2);
+                _etestCache[6] = Vector3.Cross(e2, f0);
+                _etestCache[7] = Vector3.Cross(e2, f1);
+                _etestCache[8] = Vector3.Cross(e2, f2);
 
-                Vector3 a10 = Vector3.Cross(e1, f0);
-                Vector3 a11 = Vector3.Cross(e1, f1);
-                Vector3 a12 = Vector3.Cross(e1, f2);
+                bool intersect = true;
+                for (int i = 0; i < 9; i++)
+                {
+                    float p0 = Vector3.Dot(_etestCache[i], v0);
+                    float p1 = Vector3.Dot(_etestCache[i], v1);
+                    float p2 = Vector3.Dot(_etestCache[i], v2);
+                    float r = voxelBound.boundBox.half.x * Mathf.Abs(_etestCache[i].x) +
+                              voxelBound.boundBox.half.y * Mathf.Abs(_etestCache[i].y) +
+                              voxelBound.boundBox.half.z * Mathf.Abs(_etestCache[i].z);
 
-                Vector3 a20 = Vector3.Cross(e2, f0);
-                Vector3 a21 = Vector3.Cross(e2, f1);
-                Vector3 a22 = Vector3.Cross(e2, f2);
+                    if (Mathf.Min(Mathf.Min(p0, p1), p2) > r || Mathf.Max(Mathf.Max(p0, p1), p2) < -r)
+                    {
+                        intersect = false;
+                        break;
+                    }
+                }
+
+                if (intersect == false)
+                {
+                    continue;
+                }
+                // Pass all test above, the voxel overlap with the triangle
+                voxelBound.overlapWithTriangle = true;
+                Debug.Log("相交");
+                break;
             }
         }
     }
@@ -141,13 +199,11 @@ public class Voxelizer : MonoBehaviour
         }
         foreach (VoxelBound tBound in _voxelArray)
         {
-            Handles.DrawWireCube(tBound.boundBox.center,tBound.boundBox.half*2);
-        }
+            if (tBound.overlapWithTriangle == true)
+            {
+                Handles.DrawWireCube(tBound.boundBox.center, tBound.boundBox.half * 2);
 
-        foreach (TriangleInfo tTriangleInfo in _triangleList)
-        {
-            Handles.DrawWireCube(tTriangleInfo.boundBox.center,tTriangleInfo.boundBox.size);
-            //Handles.DrawLine(tTriangleInfo.p1,tTriangleInfo.p1 + tTriangleInfo.normal);
+            }
         }
     }
     // Update is called once per frame
