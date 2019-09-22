@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class VoxelBound
 {
@@ -36,12 +36,16 @@ public class Voxelizer : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Voxelize();
+        //Display();
+    }
+
+    public void Voxelize()
+    {
         InitVoxelArray();
         InitTriangleList();
         IntersectTest();
-        Display();
     }
-
     private void Display()
     {
         Vector3 size = _halfVector * 2;
@@ -55,7 +59,7 @@ public class Voxelizer : MonoBehaviour
             }
         }
     }
-    public void InitVoxelArray()
+    private void InitVoxelArray()
     {
         Vector3 originPos = voxelBoundBox.bounds.min;
         Vector3 size = voxelBoundBox.bounds.size;
@@ -78,7 +82,7 @@ public class Voxelizer : MonoBehaviour
         }
     }
 
-    public void InitTriangleList()
+    private void InitTriangleList()
     {
         _triangleList = new List<TriangleInfo>();
         MeshFilter[] meshFilters = this.transform.GetComponentsInChildren<MeshFilter>();
@@ -112,85 +116,95 @@ public class Voxelizer : MonoBehaviour
         }
     }
 
-    private Vector3[] _etestCache = new Vector3[9];
-    public void IntersectTest()
+    private void IntersectTest()
     {
-        Vector3 e0 = Vector3.right;
-        Vector3 e1 = Vector3.up;
-        Vector3 e2 = Vector3.forward;
+        Stopwatch stopwatch = Stopwatch.StartNew();
         foreach (TriangleInfo triangle in _triangleList)
         {
             foreach (VoxelBound voxelBound in _voxelArray)
             {
-                // 已经相交的 不再检查
-                if (voxelBound.overlapWithTriangle == true)
+                // 该体素已经与某个三角形相交了 就不用判定了
+                if (voxelBound.overlapWithTriangle)
                 {
                     continue;
                 }
-
-                // Triangle , Voxel AABB Test
-                if (!voxelBound.boundBox.Overlap(triangle.boundBox))
+                if (Intersect(voxelBound.boundBox, triangle))
                 {
-                    continue;
+                    voxelBound.overlapWithTriangle = true;
                 }
-
-                Vector3 v0 = triangle.p1 - voxelBound.boundBox.center;
-                Vector3 v1 = triangle.p2 - voxelBound.boundBox.center;
-                Vector3 v2 = triangle.p3 - voxelBound.boundBox.center;
-                Vector3 f0 = v1 - v0, f1 = v2 - v1, f2 = v0 - v2;
-
-
-                // Normal Plane Test
-                //float d = Vector3.Dot(v0, triangle.normal);
-                //float signedDistance = d;
-                //float e = voxelBound.boundBox.half.x * Mathf.Abs(triangle.normal.x) +
-                //          voxelBound.boundBox.half.y * Mathf.Abs(triangle.normal.y) +
-                //          voxelBound.boundBox.half.z * Mathf.Abs(triangle.normal.z);
-                //if (signedDistance - e > 0 || signedDistance - e < 0)
-                //{
-                //    continue;
-                //}
-
-                // Nine other tests
-                _etestCache[0] = Vector3.Cross(e0, f0);
-                _etestCache[1] = Vector3.Cross(e0, f1);
-                _etestCache[2] = Vector3.Cross(e0, f2);
-                _etestCache[3] = Vector3.Cross(e1, f0);
-                _etestCache[4] = Vector3.Cross(e1, f1);
-                _etestCache[5] = Vector3.Cross(e1, f2);
-                _etestCache[6] = Vector3.Cross(e2, f0);
-                _etestCache[7] = Vector3.Cross(e2, f1);
-                _etestCache[8] = Vector3.Cross(e2, f2);
-
-                bool intersect = true;
-                for (int i = 0; i < 9; i++)
-                {
-                    float p0 = Vector3.Dot(_etestCache[i], v0);
-                    float p1 = Vector3.Dot(_etestCache[i], v1);
-                    float p2 = Vector3.Dot(_etestCache[i], v2);
-                    float r = voxelBound.boundBox.half.x * Mathf.Abs(_etestCache[i].x) +
-                              voxelBound.boundBox.half.y * Mathf.Abs(_etestCache[i].y) +
-                              voxelBound.boundBox.half.z * Mathf.Abs(_etestCache[i].z);
-
-                    if (Mathf.Min(Mathf.Min(p0, p1), p2) > r || Mathf.Max(Mathf.Max(p0, p1), p2) < -r)
-                    {
-                        intersect = false;
-                        break;
-                    }
-                }
-
-                if (intersect == false)
-                {
-                    continue;
-                }
-                // Pass all test above, the voxel overlap with the triangle
-                voxelBound.overlapWithTriangle = true;
-                Debug.Log("相交");
-                break;
             }
         }
+        stopwatch.Stop();
+        Debug.Log($"体素化完成，耗时:{stopwatch.ElapsedMilliseconds}ms");
     }
 
+    private bool Intersect(AABBBoundBox aabb, TriangleInfo triange)
+    {
+        // 转换三角形顶点至以aabb的中心为原点的坐标系下
+        Vector3 v0 = triange.p1 - aabb.center;
+        Vector3 v1 = triange.p2 - aabb.center;
+        Vector3 v2 = triange.p3 - aabb.center;
+        // 三角形边的向量形式
+        Vector3 f0 = v1 - v0;
+        Vector3 f1 = v2 - v1;
+        Vector3 f2 = v0 - v2;
+        // AABB的法线
+        Vector3 u0 = new Vector3(1.0f, 0f, 0f);
+        Vector3 u1 = new Vector3(0,1.0f,0);
+        Vector3 u2 = new Vector3(0,0,1.0f);
+        Vector3[] axiArray = new Vector3[]
+        {
+            Vector3.Cross(u0, f0),
+            Vector3.Cross(u0, f1),
+            Vector3.Cross(u0, f2),
+            Vector3.Cross(u1, f0),
+            Vector3.Cross(u1, f1),
+            Vector3.Cross(u1, f2),
+            Vector3.Cross(u2, f0),
+            Vector3.Cross(u2, f1),
+            Vector3.Cross(u2, f2),
+            u0,
+            u1,
+            u2,
+            Vector3.Cross(f0,f1)
+        };
+        for (int i = 0; i < axiArray.Length; i++)
+        {
+            // 判定该轴是不是一个分离轴 如果是的话可判定不相交
+            if (IsSeparateAxi(axiArray[i], aabb.half, v0, v1, v2))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsSeparateAxi(Vector3 axi, Vector3 aabbExtent, Vector3 v0, Vector3 v1, Vector3 v2)
+    {
+        Vector3 u0 = new Vector3(1.0f, 0f, 0f);
+        Vector3 u1 = new Vector3(0, 1.0f, 0);
+        Vector3 u2 = new Vector3(0, 0, 1.0f);
+        float p0 = Vector3.Dot(v0, axi);
+        float p1 = Vector3.Dot(v1, axi);
+        float p2 = Vector3.Dot(v2, axi);
+        float r = aabbExtent.x * Mathf.Abs(Vector3.Dot(u0, axi)) +
+                  aabbExtent.y * Mathf.Abs(Vector3.Dot(u1, axi)) +
+                  aabbExtent.z * Mathf.Abs(Vector3.Dot(u2, axi));
+
+        // 是分离轴
+        if (Mathf.Max(
+            -Mathf.Max(Mathf.Max(p0,p1),p2),
+            Mathf.Min(Mathf.Min(p0,p1),p2)
+            ) > r)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    
     private void OnDrawGizmosSelected()
     {
         if (Application.isPlaying == false)
@@ -206,9 +220,5 @@ public class Voxelizer : MonoBehaviour
             }
         }
     }
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+
 }
