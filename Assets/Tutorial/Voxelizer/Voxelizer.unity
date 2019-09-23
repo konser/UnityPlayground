@@ -493,6 +493,7 @@ GameObject:
   - component: {fileID: 1383094312}
   - component: {fileID: 1383094310}
   - component: {fileID: 1383094313}
+  - component: {fileID: 1383094311}
   m_Layer: 0
   m_Name: Voxelizer
   m_TagString: Untagged
@@ -513,6 +514,21 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 512, y: 512, z: 512}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1383094311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1383094309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c390f4bd11374c90843d5cfe85ba518c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  x: 32524
+  y: 3198
+  z: 717
 --- !u!4 &1383094312
 Transform:
   m_ObjectHideFlags: 0
@@ -536,7 +552,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1383094309}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d8db5f5f365e42a79c77639a9ab44908, type: 3}
   m_Name: 
