@@ -36,9 +36,8 @@ public class TerrainBase : MonoBehaviour
         cubes[x, z].transform.localScale = new Vector3(1, heightMap[x, z], 1);
         cubes[x, z].transform.position = new Vector3(x, heightMap[x, z] / 2f - 0.5f, z);
 
+        matBlock.SetColor("_Color", color);
         render = cubes[x, z].transform.GetComponent<Renderer>();
-        render.GetPropertyBlock(matBlock);
-        matBlock.SetColor("_MainColor", color);
         render.SetPropertyBlock(matBlock);
     }
 

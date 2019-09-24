@@ -7,8 +7,8 @@ using Debug = UnityEngine.Debug;
 public class MonoTest:MonoBehaviour
 {
     public uint x, y, z;
-    [ContextMenu("Test")]
-    public void Test()
+    [ContextMenu("Test MortonEncoding")]
+    public void TestMortonEncoding()
     {
         TestMorton(x,y,z);
     }
@@ -23,4 +23,11 @@ public class MonoTest:MonoBehaviour
             Debug.LogError($"错误：{x} {y} {z} 编码为 {morton},解码为 {decodes[0]} {decodes[1]} {decodes[2]}");
         }
     }
+}
+
+public struct Grid
+{
+    public int x;
+    public int y;
+    public double cost;
 }

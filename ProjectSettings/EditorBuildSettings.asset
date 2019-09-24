@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Tutorial/JPS/JPSTest.unity
+    guid: 27b740f9286488e4cb1e622282bba5d8
   m_configObjects: {}
