@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug =UnityEngine.Debug;
 
 public interface ICollsionObject
 {
@@ -53,6 +55,7 @@ public class OctTree<T> where T:ICollsionObject
 
     public void UpdateTree()
     {
+        Stopwatch stopWatch = Stopwatch.StartNew();
         // 没建好树，建树
         if (s_treeBuilt == false)
         {
@@ -71,6 +74,8 @@ public class OctTree<T> where T:ICollsionObject
             }
         }
         s_treeReady = true;
+        stopWatch.Stop();
+        Debug.Log($"Octree构造耗时{stopWatch.ElapsedMilliseconds}");
     }
 
     public void BuildTree()
