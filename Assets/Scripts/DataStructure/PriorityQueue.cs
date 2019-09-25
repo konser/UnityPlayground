@@ -34,6 +34,7 @@ public class PriorityQueue<TElement,TPriority> : IPriorityQueue<TElement, TPrior
     {
         return heap.RemoveMin().Data;
     }
+
     public int Count()
     {
         return heap.Size();
