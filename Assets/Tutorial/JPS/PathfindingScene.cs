@@ -14,6 +14,8 @@ public class Node
     public Node previous;
     public GameObject block;
     public readonly bool isObstacle;
+    public int dirX;
+    public int dirZ;
     public Node(int x, int z, float cost,bool obstacle)
     {
         this.x = x;
@@ -117,6 +119,36 @@ public class PathfindingScene : MonoBehaviour
         }
     }
 
+    private float GetDistance(Node a, Node b)
+    {
+        return EulerDistance(a.x, a.z, b.x, b.z);
+    }
+
+    private bool IsWalkable(Node node)
+    {
+        if (node == null)
+        {
+            return false;
+        }
+        if (InRange(node) == false)
+        {
+            return false;
+        }
+        if (node.isObstacle)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private Node GetNode(int x, int z)
+    {
+        if (InRange(x, z) == false)
+        {
+            return null;
+        }
+        return nodeMap[x, z];
+    }
     // --距离估算
     private float EulerDistance(int x, int z, int xend, int zend)
     {
@@ -308,6 +340,8 @@ public class PathfindingScene : MonoBehaviour
         HashSet<Node> openSet = new HashSet<Node>();
         HashSet<Node> explored = new HashSet<Node>();
         openSet.Add(startNode);
+        startNode.dirX = 0;
+        startNode.dirZ = 0;
         priorityQueue.Insert(startNode,0f);
         while (priorityQueue.Count() != 0)
         {
@@ -333,8 +367,6 @@ public class PathfindingScene : MonoBehaviour
     private void IdentitySuccessors(Node currNode, Node goalNode,HashSet<Node> openSet, HashSet<Node> explored,PriorityQueue<Node,float> priorityQueue)
     {
         Node[] neibours = GetNeibours(currNode);
-        float distance = currNode.costSoFar;
-        float newCost;
         for (int i = 0; i < neibours.Length; i++)
         {
             if (neibours[i] == null || InRange(neibours[i]) == false)
@@ -347,7 +379,7 @@ public class PathfindingScene : MonoBehaviour
                 continue;
             }
             float step = i > 4 ? 1.41421356f : 1f;
-            newCost = currNode.costSoFar + GetDistance(currNode,jumpNode) + Heuristic(jumpNode.x,jumpNode.z,goalNode.x,goalNode.z);
+            float newCost = currNode.costSoFar + GetDistance(currNode,jumpNode) + Heuristic(jumpNode.x,jumpNode.z,goalNode.x,goalNode.z);
             if (explored.Contains(jumpNode) == false || newCost < jumpNode.costSoFar)
             {
                 jumpNode.costSoFar = newCost;
@@ -357,37 +389,6 @@ public class PathfindingScene : MonoBehaviour
                 SetBlockColor(jumpNode.block,Color.yellow,drawPath);
             }
         }
-    }
-
-    private float GetDistance(Node a, Node b)
-    {
-        return EulerDistance(a.x, a.z, b.x, b.z);
-    }
-
-    private bool IsWalkable(Node node)
-    {
-        if (node == null)
-        {
-            return false;
-        }
-        if (InRange(node) == false)
-        {
-            return false;
-        }
-        if (node.isObstacle)
-        {
-            return false;
-        }
-        return true;
-    }
-
-    private Node GetNode(int x, int z)
-    {
-        if (InRange(x, z) == false)
-        {
-            return null;
-        }
-        return nodeMap[x, z];
     }
     private Node Jump(Node parentNode, Node neibour, Node goal)
     {
@@ -402,6 +403,7 @@ public class PathfindingScene : MonoBehaviour
 
         int dx = neibour.x - parentNode.x;
         int dz = neibour.z - parentNode.z;
+
         // 检查对角线
         if (dx != 0 && dz != 0)
         {
@@ -418,27 +420,28 @@ public class PathfindingScene : MonoBehaviour
                 return neibour;
             }
         }
-
-        // 水平 
-        if (dx != 0)
+        else
         {
-            if ((IsWalkable(GetNode(neibour.x + dx, neibour.z + 1)) && !IsWalkable(GetNode(neibour.x, neibour.z + 1))) ||
-                (IsWalkable(GetNode(neibour.x + dx, neibour.z - 1)) && !IsWalkable(GetNode(neibour.x, neibour.z - 1))))
+            // 水平 
+            if (dx != 0)
             {
-                return neibour;
+                if ((IsWalkable(GetNode(neibour.x + dx, neibour.z + 1)) && !IsWalkable(GetNode(neibour.x, neibour.z + 1))) ||
+                    (IsWalkable(GetNode(neibour.x + dx, neibour.z - 1)) && !IsWalkable(GetNode(neibour.x, neibour.z - 1))))
+                {
+                    return neibour;
+                }
             }
-        }
-        // 垂直
-        if (dz != 0)
-        {
-            if ((IsWalkable(GetNode(neibour.x - 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x - 1, neibour.z))) ||
-                (IsWalkable(GetNode(neibour.x + 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x + 1, neibour.z))))
+            // 垂直
+            if (dz != 0)
             {
-                return neibour;
+                if ((IsWalkable(GetNode(neibour.x - 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x - 1, neibour.z))) ||
+                    (IsWalkable(GetNode(neibour.x + 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x + 1, neibour.z))))
+                {
+                    return neibour;
+                }
             }
+
         }
-
-
         return Jump(neibour,GetNode(neibour.x+dx,neibour.z+dz),goal);
     }
     #endregion
