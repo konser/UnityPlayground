@@ -10,17 +10,15 @@ public class Node
 {
     public int x;
     public int z;
-    public float costSoFar;
+    public float realCost; // g cost, fcost 与hcost不存储 运行中算出来
     public Node previous;
     public GameObject block;
     public readonly bool isObstacle;
-    public int dirX;
-    public int dirZ;
-    public Node(int x, int z, float cost,bool obstacle)
+    public Node(int x, int z, float realCost, bool obstacle)
     {
         this.x = x;
         this.z = z;
-        this.costSoFar = cost;
+        this.realCost = realCost;
         previous = null;
         isObstacle = obstacle;
     }
@@ -35,6 +33,7 @@ public enum EHeuristic
 
 public class PathfindingScene : MonoBehaviour
 {
+    public float yieldWaitTime = 2f;
     public Texture2D texture;
     public Vector2Int startPos;
     public Vector2Int endPos;
@@ -50,7 +49,7 @@ public class PathfindingScene : MonoBehaviour
     private MaterialPropertyBlock props;
     private int size;
     private Node[,] nodeMap;
-    private WaitForSeconds waitTime = new WaitForSeconds(0.02f);
+    private WaitForSeconds waitTime;
     private Func<int, int, int, int, float> Heuristic;
 
     private void Start()
@@ -62,6 +61,7 @@ public class PathfindingScene : MonoBehaviour
 
         blockPrefab = Resources.Load<GameObject>("ColorCube");
         CreateScene(texture);
+        waitTime = new WaitForSeconds(yieldWaitTime);
     }
 
     private void CreateScene(Texture2D texture)
@@ -96,7 +96,7 @@ public class PathfindingScene : MonoBehaviour
         }
     }
 
-    private void SetBlockColor(GameObject block, Color color,bool draw = true)
+    private void SetBlockColor(GameObject block, Color color, bool draw = true)
     {
         props.SetColor("_Color", color);
         Renderer render = block.transform.GetComponent<Renderer>();
@@ -107,14 +107,14 @@ public class PathfindingScene : MonoBehaviour
         _pathForDisplay.Clear();
         foreach (Node node in nodeMap)
         {
-            node.costSoFar = Single.PositiveInfinity;
+            node.realCost = Single.PositiveInfinity;
             if (isObstacle[node.x, node.z])
             {
-                SetBlockColor(node.block,Color.black);
+                SetBlockColor(node.block, Color.black);
             }
             else
             {
-                SetBlockColor(node.block,Color.white);
+                SetBlockColor(node.block, Color.white);
             }
         }
     }
@@ -179,7 +179,7 @@ public class PathfindingScene : MonoBehaviour
         }
         return nodeList;
     }
-    private Node[] GetNeibours(Node n)
+    private Node[] GetAllNeibours(Node n)
     {
         int x = n.x;
         int z = n.z;
@@ -241,18 +241,18 @@ public class PathfindingScene : MonoBehaviour
                 Heuristic = EulerDistance;
                 break;
         }
-        SetBlockColor(nodeMap[xstart, zstart].block,Color.yellow,drawPath);
-        SetBlockColor(nodeMap[xend,zend].block,Color.blue,drawPath);
+        SetBlockColor(nodeMap[xstart, zstart].block, Color.yellow, drawPath);
+        SetBlockColor(nodeMap[xend, zend].block, Color.blue, drawPath);
 
         // 寻路流程
         Stopwatch watch = Stopwatch.StartNew();
-        List<Node> reachedList = new List<Node>();
-        List<Node> exploredList = new List<Node>();
+        HashSet<Node> reachedList = new HashSet<Node>();
+        HashSet<Node> exploredList = new HashSet<Node>();
         PriorityQueue<Node, float> pq = new PriorityQueue<Node, float>(0f);
         Node[] neibours = new Node[8];
 
-        nodeMap[xstart, zstart].costSoFar = 0f;
-        pq.Insert(nodeMap[xstart,zstart], 0f);
+        nodeMap[xstart, zstart].realCost = 0f;
+        pq.Insert(nodeMap[xstart, zstart], 0f);
         reachedList.Add(nodeMap[xstart, zstart]);
 
         while (pq.Count() != 0)
@@ -268,22 +268,32 @@ public class PathfindingScene : MonoBehaviour
             }
             exploredList.Add(currNode);
             reachedList.Remove(currNode);
-            SetBlockColor(currNode.block,Color.gray,drawPath);
-            neibours = GetNeibours(currNode);
+            SetBlockColor(currNode.block, Color.gray, drawPath);
+            neibours = GetAllNeibours(currNode);
 
             for (int i = 0; i < 8; i++)
             {
                 if (neibours[i] != null && neibours[i].isObstacle == false && !exploredList.Contains(neibours[i]))
                 {
                     float step = i > 4 ? 1.41421356f : 1f;
-                    float newCost = currNode.costSoFar + step;
-                    if (reachedList.Contains(neibours[i]) == false || newCost < neibours[i].costSoFar)
+                    float estimateCost = Heuristic(neibours[i].x, neibours[i].z, xend, zend);
+                    float newCost = currNode.realCost + step;
+                    if (reachedList.Contains(neibours[i]) == false || newCost < neibours[i].realCost)
                     {
+                        float beforeCost = neibours[i].realCost;
                         neibours[i].previous = currNode;
-                        neibours[i].costSoFar = newCost;
-                        pq.Insert(neibours[i], neibours[i].costSoFar + Heuristic(neibours[i].x, neibours[i].z, xend, zend));
+                        neibours[i].realCost = newCost;
+                        if (reachedList.Contains(neibours[i]) == false)
+                        {
+                            Debug.Log($"Astart Add {neibours[i].x},{neibours[i].z}: {beforeCost + estimateCost} -> {estimateCost + neibours[i].realCost}");
+                        }
+                        else
+                        {
+                            Debug.Log($"Astar Update {neibours[i].x},{neibours[i].z}: {beforeCost + estimateCost} -> {estimateCost + neibours[i].realCost}");
+                        }
+                        pq.Insert(neibours[i], neibours[i].realCost + estimateCost);
                         reachedList.Add(neibours[i]);
-                        SetBlockColor(neibours[i].block,Color.yellow,drawPath);
+                        SetBlockColor(neibours[i].block, Color.yellow, drawPath);
                     }
                 }
             }
@@ -303,7 +313,7 @@ public class PathfindingScene : MonoBehaviour
     {
         Reset();
         StopAllCoroutines();
-        StartCoroutine(FindPathJPS(nodeMap[startPos.x,startPos.y],nodeMap[endPos.x,endPos.y]));
+        StartCoroutine(FindPathJPS(nodeMap[startPos.x, startPos.y], nodeMap[endPos.x, endPos.y]));
     }
 
     public IEnumerator FindPathJPS(Node startNode, Node goalNode)
@@ -332,45 +342,49 @@ public class PathfindingScene : MonoBehaviour
                 Heuristic = EulerDistance;
                 break;
         }
-        SetBlockColor(startNode.block,Color.yellow,drawPath);
-        SetBlockColor(goalNode.block,Color.green,drawPath);
         Stopwatch watch = Stopwatch.StartNew();
         // --JPS Path Finding
-        PriorityQueue<Node,float> priorityQueue = new PriorityQueue<Node,float>(0f);
+        PriorityQueue<Node, float> priorityQueue = new PriorityQueue<Node, float>(0f);
         HashSet<Node> openSet = new HashSet<Node>();
         HashSet<Node> explored = new HashSet<Node>();
         openSet.Add(startNode);
-        startNode.dirX = 0;
-        startNode.dirZ = 0;
-        priorityQueue.Insert(startNode,0f);
+        startNode.realCost = 0f;
+        startNode.previous = null;
+        priorityQueue.Insert(startNode, 0f);
         while (priorityQueue.Count() != 0)
         {
             Node currNode = priorityQueue.Pop();
             if (currNode.x == goalNode.x && currNode.z == goalNode.z)
             {
                 watch.Stop();
-                Debug.Log($"JPS寻路完成，耗时{watch.ElapsedMilliseconds}ms");
+                //Debug.Log($"JPS寻路完成，耗时{watch.ElapsedMilliseconds}ms");
                 _pathForDisplay = ConstructPath(currNode);
                 yield break;
             }
-            SetBlockColor(currNode.block,Color.gray,drawPath);
             explored.Add(currNode);
             openSet.Remove(currNode);
-            IdentitySuccessors(currNode,goalNode,openSet,explored,priorityQueue);
+
+            IdentitySuccessors(currNode, goalNode, openSet, explored, priorityQueue);
             if (showProcess)
             {
                 yield return waitTime;
             }
         }
+        Debug.LogError("JPS 没找到路径");
     }
 
-    private void IdentitySuccessors(Node currNode, Node goalNode,HashSet<Node> openSet, HashSet<Node> explored,PriorityQueue<Node,float> priorityQueue)
+    private void IdentitySuccessors(Node currNode, Node goalNode, HashSet<Node> openSet, HashSet<Node> explored, PriorityQueue<Node, float> priorityQueue)
     {
-        Node[] neibours = GetNeibours(currNode);
+        Node[] neibours = GetNeibours_JPS(currNode);
         for (int i = 0; i < neibours.Length; i++)
         {
-            if (neibours[i] == null || InRange(neibours[i]) == false)
+            if (neibours[i] == null)
             {
+                continue;
+            }
+            if (explored.Contains(neibours[i]))
+            {
+                Debug.Log("Skip neibour explored.");
                 continue;
             }
             Node jumpNode = Jump(currNode, neibours[i], goalNode);
@@ -378,18 +392,105 @@ public class PathfindingScene : MonoBehaviour
             {
                 continue;
             }
-            float step = i > 4 ? 1.41421356f : 1f;
-            float newCost = currNode.costSoFar + GetDistance(currNode,jumpNode) + Heuristic(jumpNode.x,jumpNode.z,goalNode.x,goalNode.z);
-            if (explored.Contains(jumpNode) == false || newCost < jumpNode.costSoFar)
+            float dist = Heuristic(currNode.x, currNode.z, jumpNode.x, jumpNode.z);
+            float newCost = currNode.realCost + dist;
+            if (openSet.Contains(jumpNode) == false || newCost < jumpNode.realCost)
             {
-                jumpNode.costSoFar = newCost;
+                jumpNode.realCost = newCost;
                 jumpNode.previous = currNode;
-                priorityQueue.Insert(jumpNode,jumpNode.costSoFar);
+                float estimateCost = Heuristic(jumpNode.x, jumpNode.z, goalNode.x, goalNode.z);
+                priorityQueue.Insert(jumpNode, jumpNode.realCost + estimateCost);
                 openSet.Add(jumpNode);
-                SetBlockColor(jumpNode.block,Color.yellow,drawPath);
             }
         }
     }
+
+    private Node[] GetNeibours_JPS(Node node)
+    {
+        Node[] nodes = new Node[8];
+        if (node.previous == null)
+        {
+            return GetAllNeibours(node);
+        }
+        Node parentNode = node.previous;
+        int x = node.x, z = node.z;
+        int px = parentNode.x;
+        int pz = parentNode.z;
+        int dx = (x - px) / Mathf.Max(Mathf.Abs(x - px), 1);
+        int dz = (z - pz) / Mathf.Max(Mathf.Abs(z - pz), 1);
+
+        if (dx != 0 && dz != 0)
+        {
+            if (IsWalkable(GetNode(x, z + dz)))
+            {
+                nodes[0] = GetNode(x, z + dz);
+            }
+
+            if (IsWalkable(GetNode(x + dx, z)))
+            {
+                nodes[1] = GetNode(x + dx, z);
+            }
+
+            if (IsWalkable(GetNode(x + dx, z + dz)))
+            {
+                nodes[2] = GetNode(x + dx, z + dz);
+            }
+
+            if (!IsWalkable(GetNode(x - dx, z)))
+            {
+                nodes[3] = GetNode(x - dx, z + dz);
+            }
+            if (!IsWalkable(GetNode(x, z - dz)))
+            {
+                nodes[4] = GetNode(x + dx, z - dz);
+            }
+        }
+        else
+        {
+            if (dx == 0)
+            {
+                //nodes[0] = GetNode(x, z + dz);
+                //nodes[1] = GetNode(x + 1, z + dz);
+                //nodes[2] = GetNode(x - 1, z + dz);
+                if (IsWalkable(GetNode(x, z + dz)))
+                {
+                    nodes[0] = GetNode(x, z + dz);
+                }
+
+                if (IsWalkable(GetNode(x + 1, z + dz)))
+                {
+                    nodes[1] = GetNode(x + 1, z + dz);
+                }
+
+                if (IsWalkable(GetNode(x - 1, z + dz)))
+                {
+                    nodes[2] = GetNode(x - 1, z + dz);
+                }
+            }
+            else
+            {
+                //nodes[0] = GetNode(x + dx, z);
+                //nodes[1] = GetNode(x + dx, z + 1);
+                //nodes[2] = GetNode(x + dx, z - 1);
+                if (IsWalkable(GetNode(x + dx, z)))
+                {
+                    nodes[0] = GetNode(x + dx, z);
+                }
+
+                if (IsWalkable(GetNode(x + dx, z + 1)))
+                {
+                    nodes[1] = GetNode(x + dx, z + 1);
+                }
+
+                if (IsWalkable(GetNode(x + dx, z - 1)))
+                {
+                    nodes[2] = GetNode(x + dx, z - 1);
+                }
+            }
+        }
+        return nodes;
+    }
+
     private Node Jump(Node parentNode, Node neibour, Node goal)
     {
         if (neibour == null || !IsWalkable(neibour))
@@ -407,15 +508,14 @@ public class PathfindingScene : MonoBehaviour
         // 检查对角线
         if (dx != 0 && dz != 0)
         {
-            if ((!IsWalkable(GetNode(neibour.x - dx, neibour.z)) && IsWalkable(GetNode(neibour.x - dx, neibour.z + dz))) ||
-                (!IsWalkable(GetNode(neibour.x, neibour.z - dz)) && IsWalkable(GetNode(neibour.x + dx, neibour.z - dz))))
-            {
-                return neibour;
-            }
-
             // 检查对角线时也要对水平或垂直的进行检查，如果后续检查存在跳点，则该点是跳点
             if (Jump(neibour, GetNode(neibour.x + dx, neibour.z), goal) != null ||
                 Jump(neibour, GetNode(neibour.x, neibour.z + dz), goal) != null)
+            {
+                return neibour;
+            }
+            if ((!IsWalkable(GetNode(neibour.x - dx, neibour.z)) && IsWalkable(GetNode(neibour.x - dx, neibour.z + dz))) ||
+                (!IsWalkable(GetNode(neibour.x, neibour.z - dz)) && IsWalkable(GetNode(neibour.x + dx, neibour.z - dz))))
             {
                 return neibour;
             }
@@ -431,8 +531,7 @@ public class PathfindingScene : MonoBehaviour
                     return neibour;
                 }
             }
-            // 垂直
-            if (dz != 0)
+            else
             {
                 if ((IsWalkable(GetNode(neibour.x - 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x - 1, neibour.z))) ||
                     (IsWalkable(GetNode(neibour.x + 1, neibour.z + dz)) && !IsWalkable(GetNode(neibour.x + 1, neibour.z))))
@@ -442,7 +541,8 @@ public class PathfindingScene : MonoBehaviour
             }
 
         }
-        return Jump(neibour,GetNode(neibour.x+dx,neibour.z+dz),goal);
+        //SetBlockColor(neibour.block, Color.cyan, drawPath);
+        return Jump(neibour, GetNode(neibour.x + dx, neibour.z + dz), goal);
     }
     #endregion
 

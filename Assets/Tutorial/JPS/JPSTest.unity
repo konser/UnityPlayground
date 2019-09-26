@@ -150,9 +150,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10afe13c587876c478e8fbe80acb8cf6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  texture: {fileID: 2800000, guid: 4037d0e6077b64e43b48d5b5e3525137, type: 3}
+  yieldWaitTime: 0.1
+  texture: {fileID: 2800000, guid: 2a7c385863a0c234aa30efb02fb6fc41, type: 3}
   startPos: {x: 0, y: 0}
-  endPos: {x: 77, y: 55}
+  endPos: {x: 120, y: 120}
   heuristic: 1
   adjust_1: 1
   adjust_2: 1
