@@ -1,11 +1,15 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 public class VoxelizerWithOctree : MonoBehaviour
 {
+    public bool enableMultiThreading;
+    public bool showOctree;
     public BoxCollider voxelBoundBox;
 
     public int xDimense;
@@ -72,18 +76,25 @@ public class VoxelizerWithOctree : MonoBehaviour
         Stopwatch stopwatch = Stopwatch.StartNew();
         int objIndex = 0;
         int intersectCount = 0;
-
-        foreach (KeyValuePair<GameObject, TriangleInfo[]> tPair in objDic)
+        List<Task> tasks = new List<Task>();
+        foreach (KeyValuePair<GameObject, TriangleInfo[]> pair in objDic)
         {
+            // 每个物体多线程相交测试
+            if (enableMultiThreading)
+            {
+                tasks.Add(Task.Factory.StartNew(MultiThreadingIntersectTest, new ObjInfo(pair)));
+                continue;
+            }
+            // 单线程相交
             objIndex++;
             intersectCount = 0;
-            go = tPair.Key;
+            go = pair.Key;
             Bounds bound = go.GetComponent<Renderer>().bounds;
             AABBBoundBox objBox = new AABBBoundBox(bound.min, bound.max);
             var l = octree.GetIntersections(objBox);
             for (int i = 0; i < l.Count; i++)
             {
-                foreach (TriangleInfo tInfo in tPair.Value)
+                foreach (TriangleInfo tInfo in pair.Value)
                 {
                     if (l[i].overlapWithTriangle)
                     {
@@ -103,10 +114,47 @@ public class VoxelizerWithOctree : MonoBehaviour
                 }
             }
         }
+        Task.WaitAll(tasks.ToArray());
         stopwatch.Stop();
         EditorUtility.ClearProgressBar();
         Debug.Log($"体素化完成，耗时:{stopwatch.ElapsedMilliseconds}ms");
     }
+
+    #region 多线程
+    public class ObjInfo
+    {
+        public AABBBoundBox boundBox;
+        public TriangleInfo[] triangles;
+        public ObjInfo(KeyValuePair<GameObject, TriangleInfo[]> pair)
+        {
+            GameObject go = pair.Key;
+            Bounds bound = go.GetComponent<Renderer>().bounds;
+            boundBox = new AABBBoundBox(bound.min, bound.max);
+            triangles = pair.Value;
+        }
+    }
+    void MultiThreadingIntersectTest(object p)
+    {
+        ObjInfo info = (ObjInfo)p;
+        var l = octree.GetIntersections(info.boundBox);
+        for (int i = 0; i < l.Count; i++)
+        {
+            foreach (TriangleInfo tInfo in info.triangles)
+            {
+
+                if (l[i].overlapWithTriangle)
+                {
+                    continue;
+                }
+                if (IntersectionTest.AABBTriangle(l[i].boundBox, tInfo))
+                {
+                    l[i].overlapWithTriangle = true;
+                }
+            }
+        }
+        Debug.Log($"Thread complete : {Thread.CurrentThread.ManagedThreadId}");
+    }
+    #endregion
 
     private void OnDrawGizmosSelected()
     {
@@ -126,7 +174,10 @@ public class VoxelizerWithOctree : MonoBehaviour
 
             }
         }
-        octree.DebugDraw();
+        if (showOctree)
+        {
+            octree.DebugDraw();
+        }
     }
 
     private void Display()

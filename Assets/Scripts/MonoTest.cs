@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnityEngine;
+﻿using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 public class MonoTest:MonoBehaviour
@@ -13,6 +10,13 @@ public class MonoTest:MonoBehaviour
         TestMorton(x,y,z);
     }
 
+    private void OnLoadComplete(AsyncOperation op)
+    {
+        if (op.isDone)
+        {
+            Debug.Log("加载完成");
+        }
+    }
     public void TestMorton(uint x,uint y,uint z)
     {
         ulong morton = MortonEncode.MortonEncode64(x, y, z);

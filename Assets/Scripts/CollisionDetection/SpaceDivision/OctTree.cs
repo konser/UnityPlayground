@@ -174,10 +174,9 @@ public class OctTree<T> where T:ICollsionObject
         s_pendingInsertion.Enqueue(item);
     }
 
-    public List<T> intersections = new List<T>();
     public List<T> GetIntersections(AABBBoundBox box)
     {
-        intersections.Clear();
+        List<T> intersections = new List<T>();
         for (int i = 0; i < objectList.Count; i++)
         {
             if (objectList[i].GetBoundBox().Overlap(box))
