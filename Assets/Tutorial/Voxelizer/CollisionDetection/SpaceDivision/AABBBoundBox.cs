@@ -2,12 +2,12 @@
 using System.Collections;
 using UnityEditor;
 
-public class BoundVolume
-{
+//public class BoundVolume
+//{
 
-}
+//}
 
-public class AABBBoundBox : BoundVolume
+public class AABBBoundBox /*: BoundVolume*/
 {
     public Vector3 center;
     public Vector3 min;
@@ -16,22 +16,24 @@ public class AABBBoundBox : BoundVolume
     public Vector3 half;
     public Vector3 size;
 
+    public AABBBoundBox()
+    {
+        this.max = Vector3.zero;
+        this.min = Vector3.zero;
+        SetSize(max, min);
+    }
     public AABBBoundBox(Bounds bound)
     {
         this.max = bound.max;
         this.min = bound.min;
-        this.center = 0.5f * (max + min);
-        this.size = max - min;
-        this.half = 0.5f * (max - min);
+        SetSize(max, min);
     }
 
     public AABBBoundBox(Vector3 min, Vector3 max)
     {
         this.max = max;
         this.min = min;
-        this.center = 0.5f * (max + min);
-        this.size = max - min;
-        this.half = 0.5f * (max - min);
+        SetSize(max, min);
     }
 
     public void Extend(Vector3 pos)
@@ -44,6 +46,11 @@ public class AABBBoundBox : BoundVolume
         max.y = Mathf.Max(pos.y, max.y);
         max.z = Mathf.Max(pos.z, max.z);
 
+        SetSize(max,min);
+    }
+
+    private void SetSize(Vector3 max, Vector3 min)
+    {
         this.center = 0.5f * (max + min);
         this.size = max - min;
         this.half = 0.5f * (max - min);

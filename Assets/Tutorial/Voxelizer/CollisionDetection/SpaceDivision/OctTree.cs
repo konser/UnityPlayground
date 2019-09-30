@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
-using Debug =UnityEngine.Debug;
+using Debug = UnityEngine.Debug;
 
 public interface ICollsionObject
 {
@@ -11,44 +11,51 @@ public interface ICollsionObject
 
 public class OctTree<T> where T:ICollsionObject
 {
-    public int treeDepth = 1;
+    private int treeDepth = 1;
     // 队列里还有未插入对象时，为false
-    public static bool s_treeReady = false;
+    private static bool s_treeReady = false;
     // 有没有已经建立好的树
-    public static bool s_treeBuilt = false;
+    private static bool s_treeBuilt = false;
     // 即将插入到树结构的对象
     static  Queue<T> s_pendingInsertion = new Queue<T>();
-    public AABBBoundBox region;
-    public List<T> objectList;
-    public OctTree<T> parent;
+    private AABBBoundBox _region;
+    private List<T> objectList;
+    private OctTree<T> parent;
     // 子节点
-    public OctTree<T>[] childNodes = new OctTree<T>[8];
+    private OctTree<T>[] childNodes = new OctTree<T>[8];
     // bitmask 指示哪些子节点被使用
-    public byte activeNodesMask = 0;
+    private byte activeNodesMask = 0;
     // 最小区域 1x1x1 的方块
-    public const int MIN_SIZE = 1;
+    private const int MIN_SIZE = 1;
     // 删除空分支的等待帧数，最大为64，每当节点被使用时，该时间翻倍
     public int _maxLifespan = 8;
     // countdown
-    public int _curLife = -1;
+    private int _curLife = -1;
+
+    public AABBBoundBox region
+    {
+        get { return _region; }
+    }
 
     public OctTree(AABBBoundBox region, List<T> objList)
     {
-        this.region = region;
+        this._region = region;
         objectList = objList;
         _curLife = -1;
     }
 
     public OctTree()
     {
-        region = new AABBBoundBox(Vector3.zero, Vector3.zero);
+        _region = new AABBBoundBox(Vector3.zero, Vector3.zero);
         objectList = new List<T>();
         _curLife = -1;
     }
 
     public OctTree(AABBBoundBox region)
     {
-        this.region = region;
+        s_treeBuilt = false;
+        s_treeReady = false;
+        this._region = region;
         objectList = new List<T>();
         _curLife = -1;
     }
@@ -78,19 +85,19 @@ public class OctTree<T> where T:ICollsionObject
         Debug.Log($"Octree构造耗时{stopWatch.ElapsedMilliseconds}");
     }
 
-    public void BuildTree()
+    private void BuildTree()
     {
         if (objectList.Count <= 1)
         {
             return;
         }
 
-        Vector3 dimense = region.size;
+        Vector3 dimense = _region.size;
         if (dimense == Vector3.zero)
         {
             //如果该节点的region为0，则找它的包含区域
             // _region = FindEnclosingRegion();
-            dimense = region.size;
+            dimense = _region.size;
         }
 
         if (dimense.x <= MIN_SIZE && dimense.y <= MIN_SIZE && dimense.z <= MIN_SIZE)
@@ -98,19 +105,19 @@ public class OctTree<T> where T:ICollsionObject
             return;
         }
 
-        Vector3 half = region.half;
-        Vector3 center = region.center;
+        Vector3 half = _region.half;
+        Vector3 center = _region.center;
 
         AABBBoundBox[] octant = new AABBBoundBox[8];
-        octant[0] = new AABBBoundBox(region.min,center);
-        octant[1] = new AABBBoundBox(new Vector3(center.x,region.min.y,region.min.z), new Vector3(region.max.x,center.y,center.z));
-        octant[2] = new AABBBoundBox(new Vector3(center.x,region.min.y,center.z),new Vector3(region.max.x,center.y,region.max.z));
-        octant[3] = new AABBBoundBox(new Vector3(region.min.x,region.min.y,center.z),new Vector3(center.x,center.y,region.max.z));
+        octant[0] = new AABBBoundBox(_region.min,center);
+        octant[1] = new AABBBoundBox(new Vector3(center.x,_region.min.y,_region.min.z), new Vector3(_region.max.x,center.y,center.z));
+        octant[2] = new AABBBoundBox(new Vector3(center.x,_region.min.y,center.z),new Vector3(_region.max.x,center.y,_region.max.z));
+        octant[3] = new AABBBoundBox(new Vector3(_region.min.x,_region.min.y,center.z),new Vector3(center.x,center.y,_region.max.z));
 
-        octant[4] = new AABBBoundBox(new Vector3(region.min.x,center.y,region.min.z),new Vector3(center.x,region.max.y,center.z));
-        octant[5] = new AABBBoundBox(new Vector3(center.x,center.y,region.min.z),new Vector3(region.max.x,region.max.y,center.z));
-        octant[6] = new AABBBoundBox(center,region.max);
-        octant[7] = new AABBBoundBox(new Vector3(region.min.x,center.y,center.z), new Vector3(center.x,region.max.y,region.max.z));
+        octant[4] = new AABBBoundBox(new Vector3(_region.min.x,center.y,_region.min.z),new Vector3(center.x,_region.max.y,center.z));
+        octant[5] = new AABBBoundBox(new Vector3(center.x,center.y,_region.min.z),new Vector3(_region.max.x,_region.max.y,center.z));
+        octant[6] = new AABBBoundBox(center,_region.max);
+        octant[7] = new AABBBoundBox(new Vector3(_region.min.x,center.y,center.z), new Vector3(center.x,_region.max.y,_region.max.z));
 
         List<T>[] octListArray = new List<T>[8];
         for (int i = 0; i < 8; i++)
@@ -158,7 +165,7 @@ public class OctTree<T> where T:ICollsionObject
         s_treeReady = true;
     }
 
-    public OctTree<T> CreateNode(AABBBoundBox region, List<T> objList)
+    private OctTree<T> CreateNode(AABBBoundBox region, List<T> objList)
     {
         if (objList.Count == 0)
         {
@@ -187,7 +194,7 @@ public class OctTree<T> where T:ICollsionObject
 
         for (int i = 0; i < 8; i++)
         {
-            if (childNodes[i] != null && (box.Contains(childNodes[i].region) || box.Overlap(childNodes[i].region)))
+            if (childNodes[i] != null && (box.Contains(childNodes[i]._region) || box.Overlap(childNodes[i]._region)))
             {
                 intersections.AddRange(childNodes[i].GetIntersections(box));
             }
@@ -214,7 +221,7 @@ public class OctTree<T> where T:ICollsionObject
 
     public void DebugDraw(int depth = 0)
     {
-        region.DebugDraw(new Color(0,1-depth*0.1f,0));
+        _region.DebugDraw(new Color(0,1-depth*0.1f,0));
         for (int i = 0; i < childNodes.Length; i++)
         {
             if ((activeNodesMask & (1 << i)) != 0)

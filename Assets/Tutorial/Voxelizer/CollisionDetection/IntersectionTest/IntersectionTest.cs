@@ -14,12 +14,7 @@ public class VoxelBound : ICollsionObject
     }
 }
 
-public class TriangleInfo
-{
-    public Vector3 p1;
-    public Vector3 p2;
-    public Vector3 p3;
-}
+
 public static class IntersectionTest
 {
     public static bool AABBTriangle(AABBBoundBox aabb, TriangleInfo triange)
@@ -70,6 +65,10 @@ public static class IntersectionTest
     public static TriangleInfo[] GetTriangles(MeshFilter filter)
     {
         Mesh mesh = filter.sharedMesh;
+        if (mesh == null)
+        {
+            return null;
+        }
         Vector3[] vertices = mesh.vertices;
         int[] tris = mesh.triangles;
         TriangleInfo[] triangles = new TriangleInfo[tris.Length / 3];

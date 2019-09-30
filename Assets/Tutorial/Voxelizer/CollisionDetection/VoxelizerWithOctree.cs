@@ -79,6 +79,10 @@ public class VoxelizerWithOctree : MonoBehaviour
         List<Task> tasks = new List<Task>();
         foreach (KeyValuePair<GameObject, TriangleInfo[]> pair in objDic)
         {
+            if (pair.Value == null)
+            {
+                continue;
+            }
             // 每个物体多线程相交测试
             if (enableMultiThreading)
             {
@@ -106,7 +110,7 @@ public class VoxelizerWithOctree : MonoBehaviour
                     }
                 }
                 intersectCount++;
-                bool cancel = EditorUtility.DisplayCancelableProgressBar("Voxelize", $"No.{objIndex} Object,Intersect Count {intersectCount}/{l.Count}",
+                bool cancel = EditorUtility.DisplayCancelableProgressBar("Voxelize", $"No.{objIndex} Object (of {objDic.Count}), Intersect Count {intersectCount}/{l.Count}",
                     (float)intersectCount / l.Count);
                 if (cancel)
                 {
