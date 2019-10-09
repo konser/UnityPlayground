@@ -2,6 +2,70 @@
 using System.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+/// 为了序列化
+/// </summary>
+[System.Serializable]
+public struct Vec3
+{
+    public float x;
+    public float y;
+    public float z;
+    public Vec3(float x, float y, float z)
+    {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public Vec3(float x, float y)
+    {
+        this.x = x;
+        this.y = y;
+        this.z = 0f;
+    }
+
+    public Vec3(Vector3 v3)
+    {
+        x = v3.x;
+        y = v3.y;
+        z = v3.z;
+    }
+
+    public Vec3(Vector2 v2)
+    {
+        x = v2.x;
+        y = v2.y;
+        z = 0f;
+    }
+    
+    public Vec3 XZ()
+    {
+        return new Vec3(x,0,z);
+    }
+
+    public static implicit operator Vec3(Vector3 v)
+    {
+        return new Vec3(v);
+    }
+
+    public static implicit operator Vec3(Vector2 v)
+    {
+        return new Vec3(v);
+    }
+
+
+    public static implicit operator Vector3(Vec3 v)
+    {
+        return new Vector3(v.x,v.y,v.z);
+    }
+
+    public static implicit operator Vector2(Vec3 v)
+    {
+        return new Vector2(v.x,v.y);
+    }
+}
+
 [System.Serializable]
 public struct VoxelSpan
 {
@@ -10,7 +74,7 @@ public struct VoxelSpan
     /// <summary>
     /// 上下表面高度 x-下 y-上
     /// </summary>
-    public List<Vector3> spanList;
+    public List<Vec3> spanList;
 
     public bool isEmpty
     {
@@ -31,6 +95,7 @@ public struct VoxelSpan
 /// </summary>
 public class VoxelMergeStage
 {
+    public bool bFirstBottomToZero = true;
     private float _voxelHeight = 0f;
     private bool[,,] _voxelArray = null;
     private int _xMax;
@@ -72,7 +137,7 @@ public class VoxelMergeStage
         VoxelSpan voxelSpan = new VoxelSpan();
         voxelSpan.x = x;
         voxelSpan.z = z;
-        voxelSpan.spanList = new List<Vector3>();
+        voxelSpan.spanList = new List<Vec3>();
 
         int voxelCount = 0;
         for (int i = 0; i < _yMax; i++)
@@ -95,7 +160,10 @@ public class VoxelMergeStage
                 voxelSpan.spanList.Add(new Vector2((i - voxelCount) * _voxelHeight, _yMax * _voxelHeight));
             }
         }
-        voxelSpan.SetFirstSpanBottomToZero();
+        if (bFirstBottomToZero)
+        {
+            voxelSpan.SetFirstSpanBottomToZero();
+        }
         _mergedVoxelsSpan[x, z] = voxelSpan;
         lock (_locker)
         {

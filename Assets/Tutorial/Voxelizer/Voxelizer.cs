@@ -11,13 +11,18 @@ public class Voxelizer : MonoBehaviour
     public Vector3 voxelSize;
     public GameObject spanPrefab;
     public GameObject antiSpanPrefab;
+
     [Header("Params")]
     public int octreeGroupTriangleCount = 16;
     public int intersectionDivideAreaLength = 32;
+    public bool firstSpanBottomStartFromZero;
     [Header("Gizmos Config")]
     public bool showAntiSpan = false;
     public bool showVoxelWire = false;
     public bool showOctreeWire = false;
+
+    public bool saveToFile;
+    public string fileName;
 
     private TraverseSceneTriangleStage _traverseSceneTriangleStage;
     private OctreeSceneStage _octreeSceneStage;
@@ -37,10 +42,10 @@ public class Voxelizer : MonoBehaviour
     {
         InitComponents();
         // ground plane
-        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        go.transform.SetParent(this.transform, false);
-        go.transform.position = new Vector3(voxelizeBox.bounds.center.x, voxelizeBox.bounds.min.y + 0.01f, voxelizeBox.bounds.center.z);
-        go.transform.localScale = new Vector3(100, 0, 100);
+        //GameObject go = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        //go.transform.SetParent(this.transform, false);
+        //go.transform.position = new Vector3(voxelizeBox.bounds.center.x, voxelizeBox.bounds.min.y + 0.01f, voxelizeBox.bounds.center.z);
+        //go.transform.localScale = new Vector3(100, 0, 100);
 
         // 遍历场景
         List<TriangleInfo> triangleList = _traverseSceneTriangleStage.RetreiveSceneTriangles();
@@ -63,21 +68,26 @@ public class Voxelizer : MonoBehaviour
         // 反体素 这里传入的高度是相对于包围盒最小点的 即下表面为0(所以不传入) 上表面为包围盒高度
         VoxelSpan[,] antiSpans = _antiSpanStage.ConstructAntiSpan(spans, 2*voxelizeBox.bounds.extents.y);
 
-        // 连通区域测试以及不可走区域填充
+        // todo 连通区域测试以及不可走区域填充 
 
+        if (saveToFile)
+        {
+            SaveResult(spans);
+        }
 
-        SaveResult(spans);
         if (showAntiSpan)
         {
             CreateSpanCube(antiSpans, antiSpanPrefab);
         }
+
         CreateSpanCube(spans,spanPrefab);
-        Destroy(go);
+        //Destroy(go);
     }
 
+    [ContextMenu("CreateFromFile")]
     public void CreateFromFile()
     {
-      var b =  File.ReadAllBytes("Voxel.bin");
+      var b = File.ReadAllBytes("Assets/Resources/VoxelData/" + fileName +".bytes");
       BinaryFormatter bf = new BinaryFormatter();
       VoxelSpan[,] spans = bf.Deserialize(new MemoryStream(b)) as VoxelSpan[,];
       CreateSpanCube(spans,spanPrefab);
@@ -90,8 +100,9 @@ public class Voxelizer : MonoBehaviour
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(ms,spanArray);
             byte[] voxelBin = ms.ToArray();
-            File.WriteAllBytes("Voxel.bin",voxelBin);
+            File.WriteAllBytes("Assets/Resources/VoxelData/" + fileName+".bytes",voxelBin);
         }
+        AssetDatabase.Refresh();
     }
 
     private void InitComponents()
@@ -117,6 +128,7 @@ public class Voxelizer : MonoBehaviour
         if (_voxelMergeStage == null)
         {
             _voxelMergeStage = new VoxelMergeStage();
+            _voxelMergeStage.bFirstBottomToZero = firstSpanBottomStartFromZero;
         }
 
         if (_antiSpanStage == null)
@@ -147,6 +159,33 @@ public class Voxelizer : MonoBehaviour
                 SetSpanCubeHeight(cube,xzPos,height.x,height.y);
             }
         }
+    }
+
+    private void CombineChildrenMeshes(GameObject parent)
+    {
+        MeshFilter[] meshes = parent.GetComponentsInChildren<MeshFilter>();
+        CombineInstance[] combines = new CombineInstance[meshes.Length];
+        MeshFilter filter = parent.GetComponent<MeshFilter>();
+        if (filter == null)
+        {
+            filter = parent.AddComponent<MeshFilter>();
+        }
+        if (parent.GetComponent<MeshRenderer>() == null)
+        {
+            parent.AddComponent<MeshRenderer>();
+        }
+        for (int i = meshes.Length-1; i >= 0; i--)
+        {
+            combines[i].mesh = meshes[i].sharedMesh;
+            combines[i].transform = meshes[i].transform.localToWorldMatrix;
+            meshes[i].gameObject.SetActive(false);
+            Destroy(meshes[i].gameObject);
+        }
+
+        filter.mesh = new Mesh();
+        filter.mesh.CombineMeshes(combines,true);
+        filter.mesh.RecalculateBounds();
+        filter.mesh.RecalculateNormals();
     }
 
     private void SetSpanCubeHeight(GameObject span,Vector3 xzPos,float bottomHeight,float topHeight)
