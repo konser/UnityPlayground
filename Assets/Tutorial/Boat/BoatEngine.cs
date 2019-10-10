@@ -91,7 +91,7 @@ public class BoatEngine : MonoBehaviour
     {
         //Debug.Log(boatController.CurrentSpeed);
 
-        Vector3 forceToAdd = -waterJetTransform.forward * currentJetPower;
+        Vector3 forceToAdd = -waterJetTransform.forward * maxPower;
 
         //Only add the force if the engine is below sea level
         float waveYPos = WaterController.current.GetWaveYPos(waterJetTransform.position, Time.time);

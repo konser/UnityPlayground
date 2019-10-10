@@ -251,13 +251,13 @@ public static class BoatPhysicsMath
 
         Vector3 F_stop = boatMass * triangleData.velocity * ((2f * triangleData.area) / boatArea);
 
-        //float p = DebugPhysics.current.p;
+        float p = DebugPhysics.current.p;
 
-        //float acc_max = DebugPhysics.current.acc_max;
+        float acc_max = DebugPhysics.current.acc_max;
 
-        float p = 2f;
+        //float p = 2f;
 
-        float acc_max = acc;
+        //float acc_max = acc;
 
         float slammingCheat = DebugPhysics.current.slammingCheat;
 

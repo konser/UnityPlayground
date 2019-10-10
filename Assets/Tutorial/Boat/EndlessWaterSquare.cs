@@ -39,15 +39,15 @@ public class EndlessWaterSquare : MonoBehaviour
         secondsSinceStart = Time.time;
 
         //Update the water in the thread
-        ThreadPool.QueueUserWorkItem(new WaitCallback(UpdateWaterWithThreadPooling));
+        //ThreadPool.QueueUserWorkItem(new WaitCallback(UpdateWaterWithThreadPooling));
 
         //Start the coroutine
-        StartCoroutine(UpdateWater());
+        //StartCoroutine(UpdateWater());
     }
 
     void Update()
     {
-        //UpdateWaterNoThread();
+        UpdateWaterNoThread();
 
         //Update these as often as possible because we don't know when the thread will run because of pooling
         //and we always need the latest version

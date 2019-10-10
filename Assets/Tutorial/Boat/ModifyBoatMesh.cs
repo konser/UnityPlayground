@@ -36,7 +36,7 @@ public class ModifyBoatMesh
     public List<int> indexOfOriginalTriangle = new List<int>();
     //The total area of the entire boat
     public float boatArea;
-
+    public List<Vector3> intersectionVertices = new List<Vector3>();
     float timeSinceStart;
 
     public ModifyBoatMesh(GameObject boatObj, GameObject underWaterObj, GameObject aboveWaterObj, Rigidbody boatRB)
@@ -78,7 +78,7 @@ public class ModifyBoatMesh
         //Reset
         aboveWaterTriangleData.Clear();
         underWaterTriangleData.Clear();
-
+        intersectionVertices.Clear();
         //Switch the submerged triangle area with the one in the previous time step
         for (int j = 0; j < slammingForceData.Count; j++)
         {
@@ -281,6 +281,8 @@ public class ModifyBoatMesh
         indexOfOriginalTriangle.Add(triangleCounter);
         //Add 2 times because 2 submerged triangles need to connect to the same original triangle
         indexOfOriginalTriangle.Add(triangleCounter);
+        intersectionVertices.Add(I_M);
+        intersectionVertices.Add(I_L);
     }
 
 
@@ -361,6 +363,8 @@ public class ModifyBoatMesh
         slammingForceData[triangleCounter].submergedArea = BoatPhysicsMath.GetTriangleArea(L, J_H, J_M);
 
         indexOfOriginalTriangle.Add(triangleCounter);
+        intersectionVertices.Add(J_H);
+        intersectionVertices.Add(J_M);
     }
 
 

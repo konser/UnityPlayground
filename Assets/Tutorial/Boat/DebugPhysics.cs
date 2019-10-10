@@ -7,8 +7,8 @@ public class DebugPhysics : MonoBehaviour
     public static DebugPhysics current;
 
     //Force 2 - Pressure Drag Force
-    [Header("Force 2 - Pressure Drag Force")]
-    public float velocityReference;
+    //[Header("Force 2 - Pressure Drag Force")]
+    //public float velocityReference;
 
     [Header("Pressure Drag")]
     public float C_PD1 = 10f;
