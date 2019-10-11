@@ -24,7 +24,7 @@ public class RotateCam : MonoBehaviour
     void Update()
     {
 
-        Vec3 pos = follow.position + offset;
+        MyVec3 pos = follow.position + offset;
         transform.position = pos;
         return;
         rotationX += Input.GetAxis("Mouse X") * cameraSensitivity * Time.deltaTime;
