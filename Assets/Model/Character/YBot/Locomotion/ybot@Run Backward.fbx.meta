@@ -1,11 +1,11 @@
 fileFormatVersion: 2
-guid: 7f36cc6b4ae65664eba0c9e8879bf91d
+guid: 1e816e3adb688cd4db5db87d4ddfe649
 ModelImporter:
   serializedVersion: 28
   internalIDToNameTable:
   - first:
       74: -203655887218126122
-    second: Standard Walk
+    second: Run Backward
   externalObjects: {}
   materials:
     materialImportMode: 1
@@ -25,8 +25,8 @@ ModelImporter:
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
-    importConstraints: 1
-    animationCompression: 3
+    importConstraints: 0
+    animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
@@ -35,21 +35,21 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: Standard Walk
+      name: Run Backward
       takeName: mixamo.com
       internalID: 0
       firstFrame: 0
-      lastFrame: 35
+      lastFrame: 19
       wrapMode: 0
-      orientationOffsetY: 0
+      orientationOffsetY: 3.99
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
       loopTime: 1
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
+      loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
       loopBlendPositionXZ: 0
       keepOriginalOrientation: 0
       keepOriginalPositionY: 1

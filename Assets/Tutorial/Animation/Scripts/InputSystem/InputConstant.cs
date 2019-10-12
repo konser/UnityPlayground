@@ -27,6 +27,8 @@ public enum EVirtualKeyType
     Attack_6,
     Attack_7,
     Attack_8,
+    EquipWeapon,
+    UnequipWeapon,
 
     Skill_1=400,
     Skill_2,
@@ -36,6 +38,9 @@ public enum EVirtualKeyType
     Skill_6,
     Skill_7,
     Skill_8,
+    // 辅助
+    LShift = 900,
+    RightMouse 
 }
 
 public enum EInputContextType

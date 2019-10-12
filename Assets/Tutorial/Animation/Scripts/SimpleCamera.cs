@@ -7,15 +7,15 @@ public class SimpleCamera : MonoBehaviour
     public float backOffset;
     public float heightOffset;
     public float speed;
-
-    public Transform followedTarget;
+    public float rotateSpeed;
+    private Transform followedTarget;
     private Transform _cachedCamera;
     private Vector3 _targetCamPos;
 
     private void Start()
     {
         _cachedCamera = Camera.main.transform;
-        followedTarget = GameObject.FindGameObjectWithTag("Player")?.transform;
+        followedTarget = GameObject.FindGameObjectWithTag("Player")?.transform.Find("CameraFollowerPoint");
     }
 
     private void LateUpdate()

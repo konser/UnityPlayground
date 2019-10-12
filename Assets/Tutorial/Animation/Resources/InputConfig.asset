@@ -40,11 +40,11 @@ MonoBehaviour:
       enterStateTypeTime: 0
     - inputType: 1
       realKeyCode: 97
-      virtualKeyType: 104
+      virtualKeyType: 100
       enterStateTypeTime: 0
     - inputType: 1
       realKeyCode: 100
-      virtualKeyType: 105
+      virtualKeyType: 101
       enterStateTypeTime: 0
     - inputType: 1
       realKeyCode: 306
@@ -63,16 +63,20 @@ MonoBehaviour:
       virtualKeyType: 301
       enterStateTypeTime: 0.1
     - inputType: 0
-      realKeyCode: 108
-      virtualKeyType: 302
+      realKeyCode: 105
+      virtualKeyType: 308
+      enterStateTypeTime: 0.1
+    - inputType: 0
+      realKeyCode: 117
+      virtualKeyType: 309
       enterStateTypeTime: 0.1
     - inputType: 1
-      realKeyCode: 117
-      virtualKeyType: 400
-      enterStateTypeTime: 0.5
-    - inputType: 0
-      realKeyCode: 323
-      virtualKeyType: 401
+      realKeyCode: 304
+      virtualKeyType: 900
+      enterStateTypeTime: 0.2
+    - inputType: 1
+      realKeyCode: 324
+      virtualKeyType: 901
       enterStateTypeTime: 0.2
     - inputType: 1
       realKeyCode: 323
