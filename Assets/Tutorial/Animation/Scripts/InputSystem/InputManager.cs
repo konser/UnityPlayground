@@ -62,7 +62,7 @@ public class InputManager : MonoBehaviour
     private Dictionary<EVirtualKeyType, Action<InputData>> stateInputEventDic
         = new Dictionary<EVirtualKeyType, Action<InputData>>();
 
-    public void Register(EInputType inputType,EVirtualKeyType keyType, Action<InputData> callback)
+    public void Register(EInputType inputType,EVirtualKeyType keyType,  Action<InputData> callback)
     {
         switch (inputType)
         {

@@ -15,40 +15,28 @@ public class CharacterAttackHandler : MonoBehaviour
         layer = _animator.GetLayerIndex("SwordAttack");
     }
 
-    private void ListenInput(InputData inputKey)
-    {
-        if (inputKey.inputType == EInputType.Action)
-        {
-            switch (inputKey.virtualKey)
-            {
-            }
-        }
-    }
-
     private void Attack1(InputData inputKey)
     {
- 
+        if(_animator.GetCurrentAnimatorStateInfo(_animator.GetLayerIndex("SwordAttack")).normalizedTime >= 1.0f)
+         _animator.Play("Stable Sword Inward Slash",-1,0f);
     }
 
 
     private void Attack2(InputData inputKey)
     {
-
+        _animator.CrossFade("Stable Sword Outward Slash",0f);
     }
     private void Equip(InputData inputKey)
     {
-        _animator.CrossFade("Withdrawing Sword", 0f);
+        _animator.CrossFade("Withdrawing Sword", 0.5f);
     }
     private void Unequip(InputData inputKey)
     {
-        _animator.CrossFade("Sheathing Sword", 0f);
+        _animator.CrossFade("Sheathing Sword", 0.5f);
     }
 
     private void Update()
     {
         
     }
-
-
-
 }

@@ -166,24 +166,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   showDebugInfo: 0
   currentInputContextType: 1
---- !u!1 &31271075 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1511895320591639064, guid: b5b9ca7966de62f4aacd21d10acd8126,
-    type: 3}
-  m_PrefabInstance: {fileID: 448160240156933460}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &31271080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 31271075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ed2646c11ae742a882a570e5ee15d74d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &47862078
 GameObject:
   m_ObjectHideFlags: 0
@@ -5968,7 +5950,7 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 1, g: 0.9835481, b: 0.9386792, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
@@ -9806,6 +9788,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1511895320591639064, guid: b5b9ca7966de62f4aacd21d10acd8126,
+        type: 3}
+      propertyPath: m_Name
+      value: Character
+      objectReference: {fileID: 0}
     - target: {fileID: 2819255122384922868, guid: b5b9ca7966de62f4aacd21d10acd8126,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -9814,12 +9801,12 @@ PrefabInstance:
     - target: {fileID: 2819255122384922868, guid: b5b9ca7966de62f4aacd21d10acd8126,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 20
+      value: 6.1
       objectReference: {fileID: 0}
     - target: {fileID: 2819255122384922868, guid: b5b9ca7966de62f4aacd21d10acd8126,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2819255122384922868, guid: b5b9ca7966de62f4aacd21d10acd8126,
         type: 3}
@@ -9860,11 +9847,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1511895320591639064, guid: b5b9ca7966de62f4aacd21d10acd8126,
-        type: 3}
-      propertyPath: m_Name
-      value: Character
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b5b9ca7966de62f4aacd21d10acd8126, type: 3}
