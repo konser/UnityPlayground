@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class CharacterMovementHandle : MonoBehaviour
 {
@@ -10,7 +11,12 @@ public class CharacterMovementHandle : MonoBehaviour
     private Animator _animator;
     private CharacterController _controller;
     private CharacterMovementHandle _movementHandle;
-
+    [Header("IK Target")] public bool enableIK;
+    public GameObject leftHandIKTarget;
+    public GameObject rightHandIKTarget;
+    public GameObject leftFootIKTarget;
+    public GameObject rightFootIKTarget;
+    public Vector4 weight;
     [Header("For Debugging")]
     [SerializeField]
     private bool _isGrounded;
@@ -90,8 +96,27 @@ public class CharacterMovementHandle : MonoBehaviour
         // animation
         _animator.SetFloat("XSpeed", _leftRightVal);
         _animator.SetFloat("ZSpeed", _forwardVal);
+
+        
     }
 
+    private void OnAnimatorIK()
+    {
+        if (enableIK)
+        {
+            _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand,weight.x);
+            _animator.SetIKPosition(AvatarIKGoal.LeftHand,leftHandIKTarget.transform.position);
+
+            _animator.SetIKPositionWeight(AvatarIKGoal.RightHand, weight.y);
+            _animator.SetIKPosition(AvatarIKGoal.RightHand, rightHandIKTarget.transform.position);
+
+            _animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, weight.z);
+            _animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftFootIKTarget.transform.position);
+
+            _animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, weight.w);
+            _animator.SetIKPosition(AvatarIKGoal.RightFoot, rightFootIKTarget.transform.position);
+        }
+    }
     private Vector3 GetMoveDirection()
     {
         return new Vector3(Input.GetAxis("Horizontal"),0f,Input.GetAxis("Vertical"));

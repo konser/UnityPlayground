@@ -10,6 +10,7 @@ public enum EInputType
 
 public enum EVirtualKeyType
 {
+    None = 0,
     MoveLeft=100,
     MoveRight,
     MoveForward,
@@ -55,7 +56,7 @@ public struct InputData
     public float holdTime;
     public float normalizeValue;
     public bool isReleased;
-
+    public float timeStamp;
     public override string ToString()
     {
         string msg = "";

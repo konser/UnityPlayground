@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Diagnostics;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 public class MonoTest:MonoBehaviour
 {
+    public int size;
     public uint x, y, z;
     [ContextMenu("Test MortonEncoding")]
     public void TestMortonEncoding()
@@ -26,6 +28,43 @@ public class MonoTest:MonoBehaviour
         {
             Debug.LogError($"错误：{x} {y} {z} 编码为 {morton},解码为 {decodes[0]} {decodes[1]} {decodes[2]}");
         }
+    }
+
+    [ContextMenu("TestLoop")]
+    public void TestLoop()
+    {
+        VoxelBuffer field = new VoxelBuffer(size,size,size);
+        Stopwatch watch = Stopwatch.StartNew();
+        for (int k = 0;k < field.zSize; k++)
+        {
+            for (int j = 0; j < field.ySize; j++)
+            {
+                for (int i = 0; i < field.xSize; i++)
+                {
+                    field[i, j, k] = 1;
+                }
+            }
+        }
+        watch.Stop();
+        Debug.Log("Fast : "+watch.ElapsedMilliseconds +" ticks "+ watch.ElapsedMilliseconds);
+        //watch = Stopwatch.StartNew();
+        //for (int i = 0; i < field.xSize; i++)
+        //{
+        //    for (int j = 0; j < field.ySize; j++)
+        //    {
+        //        for (int k = 0; k < field.zSize; k++)
+        //        {
+        //            field.Value(i, j, k);
+        //        }
+        //    }
+        //}
+        //watch.Stop();
+        //Debug.Log("Normal : " + watch.ElapsedMilliseconds + " ticks " + watch.ElapsedMilliseconds);
+    }
+
+    private void Func(float a)
+    {
+
     }
 }
 

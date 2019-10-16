@@ -16,7 +16,6 @@ public class InputManager : MonoBehaviour
     }
 
     public static InputManager Instance { get; private set; }
-
     private void Awake()
     {
         Instance = this;
@@ -30,7 +29,9 @@ public class InputManager : MonoBehaviour
         _inputContextDic.Add(_inputConfig.priorityConfig.inputContextType, new InputContext(_inputConfig.priorityConfig));
         currentInputContextType = EInputContextType.NormalHumanPlayer;
         AddInputContext(currentInputContextType);
+        InitVirtualKeyAccessableDic();
     }
+
 
     #region API
 
@@ -52,6 +53,17 @@ public class InputManager : MonoBehaviour
     {
         _inputMapper.RemoveInputContext(_inputContextDic[contextType]);
     }
+
+    public void DisableVirtualKey(string virtualKey)
+    {
+        _keyAccessableNameDic[virtualKey] = false;
+    }
+
+    public void EnableVirutalKey(string virtualKey)
+    {
+        _keyAccessableNameDic[virtualKey] = true;
+    }
+
     #endregion
 
     #region 输入事件
@@ -116,6 +128,20 @@ public class InputManager : MonoBehaviour
     private Dictionary<KeyCode,float> _firedKeyThisFrame = new Dictionary<KeyCode, float>();
     private List<KeyCode> _keyCache = new List<KeyCode>();
     private List<InputData> _thisFrameMappedInputList = new List<InputData>();
+    /// <summary>
+    /// 当前逻辑按键的禁用状态，如果禁用（false) 则不在AfterReceiveInput阶段触发按键回调
+    /// todo 因为StateMachineBehaviour的Editor面板不显示枚举，只能用字符串进行配置 这里用字符串来比较
+    /// </summary>
+    private Dictionary<string, bool> _keyAccessableNameDic = new Dictionary<string, bool>();
+    private Dictionary<EVirtualKeyType, string> _keyEnumToNameDic = new Dictionary<EVirtualKeyType, string>();
+
+    private void Update()
+    {
+        BeforeReceiveInput();
+        ReceiveInput();
+        AfterReceiveInput();
+    }
+
     private void BeforeReceiveInput()
     {
         // 每帧开始时清除输入
@@ -153,6 +179,7 @@ public class InputManager : MonoBehaviour
 
         foreach (KeyCode keyCode in keycodeSet)
         {
+            // 将释放的按键加入释放按键列表，由InputMapper转换为当前输入环境的逻辑按键
             if (Input.GetKeyUp(keyCode))
             {
                 if (_holdedKeyThisFrame.ContainsKey(keyCode))
@@ -173,6 +200,11 @@ public class InputManager : MonoBehaviour
         for (int i = 0; i < _thisFrameMappedInputList.Count; i++)
         {
             InputData data = _thisFrameMappedInputList[i];
+            if (!IsKeyAccessable(data.virtualKey))
+            {
+                Debug.Log($"{data.virtualKey} 当前被禁用！");
+                continue;
+            }
             switch (data.inputType)
             {
                 case EInputType.Action:
@@ -192,11 +224,22 @@ public class InputManager : MonoBehaviour
             if (showDebugInfo) Debug.Log(data.ToString());
         }
     }
-    private void Update()
+
+    private void InitVirtualKeyAccessableDic()
     {
-        BeforeReceiveInput();
-        ReceiveInput();
-        AfterReceiveInput();
+        Array keyEnums = Enum.GetValues(typeof(EVirtualKeyType));
+        foreach (object tKeyEnum in keyEnums)
+        {
+            EVirtualKeyType key = (EVirtualKeyType)tKeyEnum;
+            _keyAccessableNameDic.Add(key.ToString(), true);
+            _keyEnumToNameDic.Add(key, key.ToString());
+        }
     }
+
+    private bool IsKeyAccessable(EVirtualKeyType key)
+    {
+        return _keyAccessableNameDic[_keyEnumToNameDic[key]];
+    }
+
     #endregion
 }

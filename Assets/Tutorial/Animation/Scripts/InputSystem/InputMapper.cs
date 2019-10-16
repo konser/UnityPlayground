@@ -34,6 +34,9 @@ public class InputMapper
         }
     }
 
+    /// <summary>
+    /// 接收释放的实际按键，转换为游戏逻辑的按键
+    /// </summary>
     public void RawKeyReleased(Dictionary<KeyCode,float> firedKeyThisFrame)
     {
         _consumeReleaseKeyCodeList.Clear();
@@ -61,7 +64,9 @@ public class InputMapper
             }
         }
     }
-
+    /// <summary>
+    /// 接收按下状态的实际按键，转换为游戏逻辑的按键
+    /// </summary>
     public void RawKeyHolded(Dictionary<KeyCode, float> holdedKeyDic)
     {
         _consumeHoldedKeycodeList.Clear();

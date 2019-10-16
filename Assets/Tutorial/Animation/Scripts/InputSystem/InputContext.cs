@@ -61,7 +61,8 @@ public class InputContext
             _currentFrameInputList.Add(new InputData
             {
                 inputType = EInputType.Action,
-                virtualKey = _actionInputMappingDic[keycode].virtualKeyType
+                virtualKey = _actionInputMappingDic[keycode].virtualKeyType,
+                timeStamp = Time.time
             });
             return true;
         }
@@ -84,7 +85,8 @@ public class InputContext
                 inputType = EInputType.State,
                 virtualKey = rule.virtualKeyType,
                 holdTime = holdedTime,
-                isReleased = isReleased
+                isReleased = isReleased,
+                timeStamp =  Time.time
             });
             return true;
         }

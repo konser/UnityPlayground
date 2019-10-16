@@ -1,31 +1,83 @@
 ﻿using UnityEngine;
-using System.Collections;
+
+public enum EComboType
+{
+    Sword_AAAAA,
+    Sword_ABABA
+}
+
+public class ComboInput
+{
+    public EVirtualKeyType keyType;
+    public int comboCount;
+    public float expiredTime;
+    public float timeStamp;
+    public Vector2 allowedNormalizedRange;
+}
 
 public class CharacterAttackHandler : MonoBehaviour
 {
     private Animator _animator;
     private int layer;
+    private ComboInput previousInput;
+    private ComboInput currentInput;
     private void Start()
     {
         _animator = GetComponent<Animator>();
-        InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.Attack_1, Attack1);
-        InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.Attack_2, Attack2);
+        InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.Attack_1, ListenAttackInput);
+        InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.Attack_2, ListenAttackInput);
         InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.EquipWeapon, Equip);
         InputManager.Instance.Register(EInputType.Action, EVirtualKeyType.UnequipWeapon, Unequip);
         layer = _animator.GetLayerIndex("SwordAttack");
+        previousInput = new ComboInput()
+        {
+            keyType = EVirtualKeyType.None,
+            comboCount = -1
+        };
     }
 
-    private void Attack1(InputData inputKey)
+    private void ListenAttackInput(InputData inputKey)
     {
-        if(_animator.GetCurrentAnimatorStateInfo(_animator.GetLayerIndex("SwordAttack")).normalizedTime >= 1.0f)
-         _animator.Play("Stable Sword Inward Slash",-1,0f);
+        currentInput = new ComboInput
+        {
+            keyType = inputKey.virtualKey,
+            comboCount = previousInput.comboCount + 1,
+            expiredTime =  2f,
+            timeStamp = inputKey.timeStamp
+        };
+        UpdateCombo();
+        previousInput = currentInput;
     }
 
-
-    private void Attack2(InputData inputKey)
+    private void UpdateCombo()
     {
-        _animator.CrossFade("Stable Sword Outward Slash",0f);
+        if (currentInput.keyType == previousInput.keyType)
+        {
+            if (currentInput.timeStamp - previousInput.timeStamp < previousInput.expiredTime)
+            {
+                EnterComboStage(EComboType.Sword_AAAAA,currentInput.comboCount);
+            }
+            else
+            {
+                EnterComboStage(EComboType.Sword_AAAAA,0);
+            }
+        }
+        else
+        {
+            EnterComboStage(EComboType.Sword_AAAAA,0);
+        }
     }
+
+    private void EnterComboStage(EComboType comboType, int comboCount)
+    {
+        if (comboCount == 0)
+        {
+            currentInput.comboCount = 0;
+        }
+        _animator.SetInteger("ComboCounter",comboCount);
+        _animator.SetInteger("ComboType",(int)comboType);
+    }
+
     private void Equip(InputData inputKey)
     {
         _animator.CrossFade("Withdrawing Sword", 0.5f);

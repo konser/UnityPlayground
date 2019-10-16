@@ -8,7 +8,7 @@ public class VFXComponent : AnimStateComponent
     {
         _debugName = "VFX";
     }
-    public override void Execute()
+    public override void ComponentUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         Debug.Log($"{_debugName} {normalizedStart} ");
     }

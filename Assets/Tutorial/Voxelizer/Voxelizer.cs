@@ -11,7 +11,7 @@ public class Voxelizer : MonoBehaviour
     public Vector3 voxelSize;
     public GameObject spanPrefab;
     public GameObject antiSpanPrefab;
-
+    public bool gen3DNoise;
     [Header("Params")]
     public int octreeGroupTriangleCount = 16;
     public int intersectionDivideAreaLength = 32;
@@ -47,6 +47,68 @@ public class Voxelizer : MonoBehaviour
         //go.transform.position = new Vector3(voxelizeBox.bounds.center.x, voxelizeBox.bounds.min.y + 0.01f, voxelizeBox.bounds.center.z);
         //go.transform.localScale = new Vector3(100, 0, 100);
 
+        bool[,,] intersectionResult = GetIntersectionResult();
+        //_intersectTestStage = null;
+
+        if (gen3DNoise)
+        {
+            VoxelBuffer buffer = new VoxelBuffer(intersectionResult.GetLength(0),intersectionResult.GetLength(1),intersectionResult.GetLength(2));
+            for (int k = 0; k < buffer.zSize; k++)
+            {
+                for (int j = 0; j < buffer.ySize; j++)
+                {
+                    for (int i = 0; i < buffer.xSize; i++)
+                    {
+                        if (intersectionResult[i, j, k])
+                        {
+                            buffer[i, j, k] = Mathf.PerlinNoise(i+0.5f,j+0.5f);
+                        }
+                    }
+                }
+            }
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, buffer);
+                byte[] voxelBuffer = ms.ToArray();
+                File.WriteAllBytes("Assets/Resources/VoxelData/" + fileName + "_Buffer.bytes", voxelBuffer);
+            }
+            AssetDatabase.Refresh();
+        }
+        else
+        {
+            // 合并
+            _voxelMergeStage.SetParams(voxelSize, intersectionResult);
+            VoxelSpan[,] spans = _voxelMergeStage.Merge();
+            //_voxelMergeStage = null;
+
+            // 反体素 这里传入的高度是相对于包围盒最小点的 即下表面为0(所以不传入) 上表面为包围盒高度
+            VoxelSpan[,] antiSpans = _antiSpanStage.ConstructAntiSpan(spans, 2 * voxelizeBox.bounds.extents.y);
+
+            // todo 连通区域测试以及不可走区域填充 
+
+            if (saveToFile)
+            {
+                SaveResult(spans);
+            }
+
+            if (showAntiSpan)
+            {
+                CreateSpanCube(antiSpans, antiSpanPrefab);
+            }
+
+            CreateSpanCube(spans, spanPrefab);
+            //Destroy(go);
+        }
+    }
+
+    /// <summary>
+    /// 获取相交测试结果
+    /// </summary>
+    /// <returns></returns>
+    public bool[,,] GetIntersectionResult()
+    {
         // 遍历场景
         List<TriangleInfo> triangleList = _traverseSceneTriangleStage.RetreiveSceneTriangles();
         //_traverseSceneTriangleStage = null;
@@ -56,32 +118,11 @@ public class Voxelizer : MonoBehaviour
         //_octreeSceneStage = null;
         EditorUtility.ClearProgressBar();
         // 相交测试W
-        _intersectTestStage.SetParams(voxelSize,octree);
+        _intersectTestStage.SetParams(voxelSize, octree);
         bool[,,] intersectionResult = _intersectTestStage.IntersectTest();
         //_intersectTestStage = null;
         EditorUtility.ClearProgressBar();
-        // 合并
-        _voxelMergeStage.SetParams(voxelSize, intersectionResult);
-        VoxelSpan[,] spans = _voxelMergeStage.Merge();
-        //_voxelMergeStage = null;
-
-        // 反体素 这里传入的高度是相对于包围盒最小点的 即下表面为0(所以不传入) 上表面为包围盒高度
-        VoxelSpan[,] antiSpans = _antiSpanStage.ConstructAntiSpan(spans, 2*voxelizeBox.bounds.extents.y);
-
-        // todo 连通区域测试以及不可走区域填充 
-
-        if (saveToFile)
-        {
-            SaveResult(spans);
-        }
-
-        if (showAntiSpan)
-        {
-            CreateSpanCube(antiSpans, antiSpanPrefab);
-        }
-
-        CreateSpanCube(spans,spanPrefab);
-        //Destroy(go);
+        return intersectionResult;
     }
 
     [ContextMenu("CreateFromFile")]
@@ -100,7 +141,7 @@ public class Voxelizer : MonoBehaviour
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(ms,spanArray);
             byte[] voxelBin = ms.ToArray();
-            File.WriteAllBytes("Assets/Resources/VoxelData/" + fileName+".bytes",voxelBin);
+            File.WriteAllBytes("Assets/Resources/VoxelData/" + fileName+"_Merged.bytes",voxelBin);
         }
         AssetDatabase.Refresh();
     }

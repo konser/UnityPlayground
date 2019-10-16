@@ -8,7 +8,7 @@ public class HitDetectComponent : AnimStateComponent
     {
         _debugName = "HitDetection";
     }
-    public override void Execute()
+    public override void ComponentUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
         Debug.Log($"{_debugName} {normalizedStart} {normalizedEnd}");
     }
