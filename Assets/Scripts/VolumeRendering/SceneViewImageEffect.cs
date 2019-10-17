@@ -43,16 +43,24 @@ public class SceneViewImageEffect : SceneViewFilter
             Graphics.Blit(source,dest);
             return;
         }
-        Matrix4x4 MatTorus = Matrix4x4.TRS(
+        Matrix4x4 rotAroundZ = Matrix4x4.TRS(
+            Vector3.zero,
+            Quaternion.Euler(new Vector3(0, 0, (Time.time * 180) % 360)),
+            Vector3.one);
+        Matrix4x4 rotAroundX = Matrix4x4.TRS(
+            Vector3.zero,
+            Quaternion.Euler(new Vector3((Time.time * 180) % 360, 0, 0)),
+            Vector3.one);
+        Matrix4x4 movement = Matrix4x4.TRS(
             Vector3.right * Mathf.Sin(Time.time) * 5,
             Quaternion.identity,
             Vector3.one);
-        MatTorus *= Matrix4x4.TRS(
-            Vector3.zero,
-            Quaternion.Euler(new Vector3(0, 0, (Time.time * 200) % 360)),
-            Vector3.one);
-
-        effectMaterial.SetMatrix("_SDFTransform", MatTorus.inverse);
+        Matrix4x4 sdft1 = movement * rotAroundX;
+        Matrix4x4 sdft2 = movement * rotAroundX*rotAroundX;
+        Matrix4x4 sdft3 = movement * rotAroundZ;
+        effectMaterial.SetMatrix("_SDFTransform_1", sdft1.inverse);
+        effectMaterial.SetMatrix("_SDFTransform_2", sdft2.inverse);
+        effectMaterial.SetMatrix("_SDFTransform_3", sdft3.inverse);
         effectMaterial.SetMatrix("_FrustumCornersEyeSpace",GetFrustumCorners(currentCamera));
         effectMaterial.SetMatrix("_CameraInvViewMatrix",currentCamera.cameraToWorldMatrix);
         effectMaterial.SetVector("_CameraWorldPos",currentCamera.transform.position);
