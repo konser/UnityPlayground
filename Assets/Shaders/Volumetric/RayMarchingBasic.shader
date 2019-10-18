@@ -113,7 +113,7 @@ Shader "RayMarching/RayMarchingBasic"
 				// 由四个角的方向自动得出每个像素位置的射线方向
 				// 后处理实际上只渲染了一个QUAD
 				o.ray = _FrustumCornersEyeSpace[(int)index].xyz;
-				//o.ray /= abs(o.ray.z);
+				// o.ray /= abs(o.ray.z);
 				// 传入的是屏幕空间的屏幕坐标，此时转换为世界空间，在像素着色器中使用
 				o.ray = mul(_CameraInvViewMatrix,o.ray);
 				return o;

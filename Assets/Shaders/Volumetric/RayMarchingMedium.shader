@@ -1,6 +1,6 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "RayMarching/RayMarchingTerrain"
+Shader "RayMarching/RayMarchingMedium"
 {
 	Properties
 	{
@@ -9,7 +9,7 @@ Shader "RayMarching/RayMarchingTerrain"
 		SubShader
 	{
 		// No culling or depth
-		Cull Off ZWrite On ZTest Always
+		Cull Off ZWrite Off ZTest Always
 
 		Pass
 		{
@@ -18,19 +18,19 @@ Shader "RayMarching/RayMarchingTerrain"
 			#pragma fragment frag
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
+			#define SCALE 6.0/3.1415926
 			sampler2D _MainTex;
 			uniform float4x4 _FrustumCornersEyeSpace;
 			uniform float4 _MainTex_TexelSize;
 			uniform float4x4 _CameraInvViewMatrix;
 			uniform float3 _CameraWorldPos;
-			uniform float _H;
-			uniform float _Lacunarity;
-			uniform float _Ocataves;
-			uniform float _Offset;
 			sampler2D _CameraDepthTexture;
 			float4x4 _SDFTransform_1;
 			float4x4 _SDFTransform_2;
 			float4x4 _SDFTransform_3;
+
+			#define MAXSTEP 64
+			#define EPSILON 0.01
 			struct appdata
 			{
 				float4 vertex : POSITION;
@@ -43,7 +43,6 @@ Shader "RayMarching/RayMarchingTerrain"
 				float2 uv : TEXCOORD0;
 				float3 ray : TEXCOORD1;
 			};
-
 
 			float hash1( float2 p )
 			{
@@ -67,7 +66,6 @@ Shader "RayMarching/RayMarchingTerrain"
 			}
 
 
-// -------- START Noise Functions ----------------------------------------------------------------------------------------
 			float4 noised( in float3 x )
 			{
 				float3 p = floor(x);
@@ -142,54 +140,17 @@ Shader "RayMarching/RayMarchingTerrain"
 
 				return value;
 			}
-//----- END    Noise Functions ----------------------------------------------------------------------------------------
-			// 返回高度
-			float height(float3 p) {
-				float4 val = fbm(p,_Ocataves);
-				return val;
-				return val.z*val.x*sin(0.2*val.y*p.x) *  val*cos(0.2*val.w*p.z)+3;
-			}
-
-			// 法线
-			float3 calcNormal(float3 pos) {
-				const float2 epsilon = float2(0.01,0.0);
-				float3 normal = float3(
-					height(pos + epsilon.xyy) - height(pos - epsilon.xyy),
-					//  0.02,
-					height(pos + epsilon.yxy) - height(pos - epsilon.yxy),
-					height(pos + epsilon.yyx) - height(pos - epsilon.yyx));
-				return normalize(normal);
-			}
-
-			// 着色
-			fixed4 caculateLighting(float3 p) {
-				float3 diffuse = float3(0.8	,0.5,0.35);
-				float3 normal = calcNormal(p);
-				float dotN_L = dot(-_WorldSpaceLightPos0.xyz,normal);
-				return fixed4(dotN_L * (_LightColor0.xyz),1);
-			}
 
 			// ray march
-			bool castRay(float3 rayOrigin,float3 rayDir,out float dist) {
-				float mint = 0.01;
-				float maxt = 100;
-				float lastY = 0;
-				float lastH  = 0;
-				float dt = 0.02;
+			fixed4 rayMarching(float3 rayOrigin,float3 rayDir,float viewDepth) {
+				const int maxStep = 64;
+				const fixed epsilon = 0.02;
 				fixed4 ret = fixed4(0,0,0,0);
 				float travelDistance = 0;
-				for(float t = mint;t<maxt;t+=dt){
-					float3 p = rayOrigin + rayDir * t;
-					float h = height(p);
-					if(p.y < h){
-						dist = t - dt + dt * ((lastH - lastY)/(p.y - lastY + lastH - h));
-						return true;
-					}
-					dt = 0.02 * t; 
-					lastH = h;
-					lastY = p.y;
+				for (int i = 0; i < maxStep; i++) {
+					float3 p = rayOrigin + rayDir * travelDistance;
 				}
-				return false;
+				return ret;
 			}
 
 			v2f vert(appdata v)
@@ -207,7 +168,7 @@ Shader "RayMarching/RayMarchingTerrain"
 				// 由四个角的方向自动得出每个像素位置的射线方向
 				// 后处理实际上只渲染了一个QUAD
 				o.ray = _FrustumCornersEyeSpace[(int)index].xyz;
-				o.ray /= abs(o.ray.z);
+				// o.ray /= abs(o.ray.z);
 				// 传入的是屏幕空间的屏幕坐标，此时转换为世界空间，在像素着色器中使用
 				o.ray = mul(_CameraInvViewMatrix,o.ray);
 				return o;
@@ -215,19 +176,7 @@ Shader "RayMarching/RayMarchingTerrain"
 
 			fixed4 frag(v2f i) : SV_Target
 			{
-				float3 rayDir = normalize(i.ray.xyz);
-				float3 rayOrigin = _CameraWorldPos;
-				float dist = 0;
-				bool isHit = castRay(rayOrigin,rayDir,dist);
-				float3 hitPoint = rayOrigin + rayDir * dist;
-				// float depth = LinearEyeDepth(tex2D(_CameraDepthTexture,i.uv).r);
-				// depth *= length(i.ray.xyz);
-				fixed3 beforeColor = tex2D(_MainTex,i.uv);
-				if(isHit){
-					return caculateLighting(hitPoint);
-				}else{
-					return fixed4(beforeColor,1);
-				}
+				return fixed4(0,0,0,1);
 			}
 			ENDCG
 		}

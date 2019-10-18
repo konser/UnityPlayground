@@ -6,6 +6,10 @@ using System.Collections;
 [AddComponentMenu("Effect/ImageEffectInSceneView")]
 public class SceneViewImageEffect : SceneViewFilter
 {
+    public float h;
+    public float lacunarity;
+    public float octaves;
+    public float offset;
     public Shader effectShader;
     private Material _effectMaterial;
     public Material effectMaterial
@@ -64,6 +68,10 @@ public class SceneViewImageEffect : SceneViewFilter
         effectMaterial.SetMatrix("_FrustumCornersEyeSpace",GetFrustumCorners(currentCamera));
         effectMaterial.SetMatrix("_CameraInvViewMatrix",currentCamera.cameraToWorldMatrix);
         effectMaterial.SetVector("_CameraWorldPos",currentCamera.transform.position);
+        effectMaterial.SetFloat("_H",h);
+        effectMaterial.SetFloat("_Lacunarity", lacunarity);
+        effectMaterial.SetFloat("_Ocataves", octaves);
+        effectMaterial.SetFloat("_Offset", offset);
         CustomGraphicsBlit(source,dest,effectMaterial,0);
 
     }
