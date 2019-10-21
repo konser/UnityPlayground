@@ -10,6 +10,7 @@ public class SceneViewImageEffect : SceneViewFilter
     public float lacunarity;
     public float octaves;
     public float offset;
+    public Texture texture;
     public Shader effectShader;
     private Material _effectMaterial;
     public Material effectMaterial
@@ -65,6 +66,7 @@ public class SceneViewImageEffect : SceneViewFilter
         effectMaterial.SetMatrix("_SDFTransform_1", sdft1.inverse);
         effectMaterial.SetMatrix("_SDFTransform_2", sdft2.inverse);
         effectMaterial.SetMatrix("_SDFTransform_3", sdft3.inverse);
+        effectMaterial.SetTexture("_PseduoNumTex", texture);
         effectMaterial.SetMatrix("_FrustumCornersEyeSpace",GetFrustumCorners(currentCamera));
         effectMaterial.SetMatrix("_CameraInvViewMatrix",currentCamera.cameraToWorldMatrix);
         effectMaterial.SetVector("_CameraWorldPos",currentCamera.transform.position);
