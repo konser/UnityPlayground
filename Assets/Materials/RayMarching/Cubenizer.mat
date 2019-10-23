@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Cubenizer
+  m_Shader: {fileID: 4800000, guid: b9d87ae84caf2cb4a9c11c7152f3d41a, type: 3}
+  m_ShaderKeywords: ENABLE_DEPTH_OUTPUT
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Floats:
+    - _AnimationPattern: 0
+    - _AnimationSpeed: 0
+    - _BumpHeight: 0
+    - _Clipping: 1
+    - _CubeSize: 0.25
+    - _CutoutDistance: 0.01
+    - _DepthOutput: 1
+    - _GridSize: 0.29
+    - _PuncturePattern: 0
+    - _Smoothness: 0.7
+    - _ZTest: 4
+    m_Colors:
+    - _Color: {r: 0.75, g: 0.75, b: 0.8, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _OffsetPosition: {r: 0, g: 0, b: 0, a: 0}
+    - _Scale: {r: 1, g: 1, b: 1, a: 0}
+    - _SpecularColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
