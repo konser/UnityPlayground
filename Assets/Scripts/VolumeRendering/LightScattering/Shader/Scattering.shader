@@ -77,6 +77,7 @@ Shader "Volume/Scattering"{
         float4x4 _FrustumCornersEyeSpace;
         float4 _MainTex_TexelSize;
         float4x4 _CameraInvViewMatrix;
+        float4x4 _CameraTransform;
         float3 _CameraWorldPos;
         sampler2D _MainTex;
         sampler2D _NoiseTex;
@@ -342,10 +343,10 @@ Shader "Volume/Scattering"{
             float4 frag(v2f i) : SV_TARGET{
                 float2 coord = ConvertByAspectRatio(i.screenPos.xy / i.screenPos.w);
                 // setup cam
-                float3 camPos = float3(20,28,-50);
-                float3 camX = float3(1,0,0);
-                float3 camY = float3(0,1,0);
-                float3 camZ = float3(0,0,1);
+                float3 camPos = mul(_CameraTransform,float4(0,0,0,1)).xyz;
+                float3 camX = normalize(_CameraTransform[0].xyz);
+                float3 camY = normalize(_CameraTransform[1].xyz);
+                float3 camZ = normalize(_CameraTransform[2].xyz);
                 // ray marching arguments
                 float3 rO = camPos;
                 float3 rD = normalize(coord.x*camX + coord.y*camY+camZ);

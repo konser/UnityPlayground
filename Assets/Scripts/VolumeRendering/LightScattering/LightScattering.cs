@@ -46,6 +46,8 @@ public class LightScattering : MonoBehaviour
         effectMaterial.SetMatrix("_FrustumCornersEyeSpace", GetFrustumCorners(currentCamera));
         effectMaterial.SetMatrix("_CameraInvViewMatrix", currentCamera.cameraToWorldMatrix);
         effectMaterial.SetVector("_CameraWorldPos", currentCamera.transform.position);
+        effectMaterial.SetMatrix("_CameraTransform",Matrix4x4.TRS(currentCamera.transform.position,currentCamera.transform.rotation,
+           new Vector3(1,1,1)));
         effectMaterial.SetVector("_LightPos",lightPos.position);
         CustomGraphicsBlit(source, dest, effectMaterial, 0);
         //CustomGraphicsBlit(source, dest, effectMaterial, 1);
