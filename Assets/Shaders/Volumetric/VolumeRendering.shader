@@ -1,4 +1,4 @@
-﻿Shader "VolumeRendering"
+﻿Shader "Volume/VolumeRendering"
 {
 	SubShader
 	{
