@@ -12,17 +12,13 @@ Shader "Volume/Scattering"{
         CGINCLUDE
         #include "UnityCG.cginc"
         #define D_DEMO_FREE
-        //#define D_DEMO_SHOW_IMPROVEMENT_FLAT
-        //#define D_DEMO_SHOW_IMPROVEMENT_NOISE
-        //#define D_DEMO_SHOW_IMPROVEMENT_FLAT_NOVOLUMETRICSHADOW
-        //#define D_DEMO_SHOW_IMPROVEMENT_NOISE_NOVOLUMETRICSHADOW
 
         #ifdef D_DEMO_FREE
-            // Apply noise on top of the height fog?
+            // 高度雾噪波
             #define D_FOG_NOISE 1.0
 
             // Height fog multiplier to show off improvement with new integration formula
-            #define D_STRONG_FOG 0.0
+            #define D_STRONG_FOG 0.05
 
             // Enable/disable volumetric shadow (single scattering shadow)
             #define D_VOLUME_SHADOW_ENABLE 1
@@ -62,7 +58,7 @@ Shader "Volume/Scattering"{
         // If 0 strongly scattering participating media will not be energy conservative
         // If 1 participating media will look too dark especially for strong extinction (as compared to what it should be)
         // Toggle only visible zhen not using the improved scattering integration.
-        #define D_UPDATE_TRANS_FIRST 0
+        #define D_UPDATE_TRANS_FIRST 1
 
         // Apply bump mapping on walls
         #define D_DETAILED_WALLS 0
@@ -71,8 +67,8 @@ Shader "Volume/Scattering"{
         #define D_MAX_STEP_LENGTH_ENABLE 1
 
         // Light position and color
-        #define LPOS float3( 20.0+15.0*sin(_Time.y), 15.0+12.0*cos(_Time.y),-20.0)
-        #define LCOL (600.0*float3( 1.0, 0.9, 0.5))
+        #define LPOS float3( 20.0+15.0*sin(_Time.y), 15.0+12.0*cos(_Time.y),-20.0+12.0*sin(_Time.y))
+        #define LCOL (600.0*float3( 1.0, 0.7, 0.3))
 
         float4x4 _FrustumCornersEyeSpace;
         float4 _MainTex_TexelSize;
@@ -156,16 +152,19 @@ Shader "Volume/Scattering"{
             float getClosestDistance(float3 p, out float material)
             {
                 float d = 0.0;
+
             #if D_MAX_STEP_LENGTH_ENABLE
-                float minD = 1.0; // restrict max step for better scattering evaluation
+                float minD = 1; // restrict max step for better scattering evaluation
             #else
                 float minD = 10000000.0;
             #endif
+
                 material = 0.0;
                 
                 float yNoise = 0.0;
                 float xNoise = 0.0;
                 float zNoise = 0.0;
+
             #if D_DETAILED_WALLS
                 yNoise = 1.0*clamp(displacementSimple(p.xz*0.005),0.0,1.0);
                 xNoise = 2.0*clamp(displacementSimple(p.zy*0.005),0.0,1.0);
@@ -215,14 +214,16 @@ Shader "Volume/Scattering"{
 
             }
 
+			// 光的距离平方衰减
             float3 evaluateLight(in float3 pos)
             {
                 float3 lightPos = LPOS;
                 float3 lightCol = LCOL;
                 float3 L = lightPos-pos;
-                return lightCol * 1.0/dot(L,L);
+                return lightCol * 1/dot(L,L);
             }
 
+			// 光的入射角度衰减（与表面夹角越大越少）
             float3 evaluateLight(in float3 pos, in float3 normal)
             {
                 float3 lightPos = LPOS;
@@ -287,7 +288,7 @@ Shader "Volume/Scattering"{
                 float transmittance = 1.0;
                 float3 scatteredLight = float3(0.0, 0.0, 0.0);
                 
-                float d = 1.0; // hack: always have a first step of 1 unit to go further
+                float d = 0.0; // hack: always have a first step of 1 unit to go further
                 float material = 0.0;
                 float3 p = float3(0.0, 0.0, 0.0);
                 float dd = 0.0;
@@ -326,7 +327,7 @@ Shader "Volume/Scattering"{
                     
                     
                     dd = getClosestDistance(p, material);
-                    if(dd<0.2)
+                    if(dd<0.01)
                         break; // give back a lot of performance without too much visual loss
                     d += dd;
                 }
@@ -356,7 +357,7 @@ Shader "Volume/Scattering"{
                 float4 scatTrans = float4(0,0,0,0);
 				 
                 // trace scene
-                traceScene(i.screenPos.x>0.5,rO, rD, finalPos, normal, albedo, scatTrans);
+                traceScene(true,rO, rD, finalPos, normal, albedo, scatTrans);
                 // lighting
                 float3 color = (albedo/3.14) * evaluateLight(finalPos, normal) * volumetricShadow(finalPos, LPOS);
                 // apply scat/transmittance
