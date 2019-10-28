@@ -80,7 +80,8 @@ Shader "Hidden/ScatterPost" {
 				}
 
 				float4 frag(v2fFog i) : COLOR0 {
-					float4 coord = UnityStereoScreenSpaceUVAdjust(i.texcoord, _MainTex_ST);
+					//float4 coord = UnityStereoScreenSpaceUVAdjust(i.texcoord, _MainTex_ST);
+					float4 coord = i.texcoord;
 					float3 world = GetWorldPos(coord.xy, i.texcoord.xy);
 
 					float4 color = tex2D(_MainTex, coord);

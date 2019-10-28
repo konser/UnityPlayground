@@ -25,8 +25,8 @@ Shader "Hidden/Scatter/ShadowFilterESM" {
 						float depth = _ShadowMap.SampleLevel(sampler_ShadowMap, IN.uv, 0).r;
 
 					//Disabled atm
-					return depth;
-					//return float4(depth, depth * depth, 0.0f, 1.0f);
+					//return depth;
+					return float4(depth, depth * depth, 0.0f, 1.0f);
 				}
 			ENDCG
 		}

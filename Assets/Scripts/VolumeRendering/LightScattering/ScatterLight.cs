@@ -269,12 +269,12 @@ public class ScatterLight : ScatterObject
 
         m_shadowCmd.SetGlobalTexture("_ShadowMap", shadowId);
         m_shadowCmd.Blit(null, m_shadowMap, ShadowFilterMaterial);
-        /*
-		//Blur the shadow map - disabled atm
-		m_shadowCmd.SetGlobalVector("_ShadowBlurSize", Vector2.right * ShadowBlur);
-		m_shadowCmd.Blit((RenderTargetIdentifier) m_shadowMap, blurTemp, ShadowBlurMaterial, 0);
-		m_shadowCmd.SetGlobalVector("_ShadowBlurSize", Vector2.up * ShadowBlur);
-		m_shadowCmd.Blit(blurTemp, m_shadowMap, ShadowBlurMaterial, 0);*/
+
+        //Blur the shadow map - disabled atm
+        m_shadowCmd.SetGlobalVector("_ShadowBlurSize", Vector2.right * ShadowBlur);
+        m_shadowCmd.Blit((RenderTargetIdentifier)m_shadowMap, blurTemp, ShadowBlurMaterial, 0);
+        m_shadowCmd.SetGlobalVector("_ShadowBlurSize", Vector2.up * ShadowBlur);
+        m_shadowCmd.Blit(blurTemp, m_shadowMap, ShadowBlurMaterial, 0);
         m_shadowCmd.ReleaseTemporaryRT(blurTemp);
     }
 

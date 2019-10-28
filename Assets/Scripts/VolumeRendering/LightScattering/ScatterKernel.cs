@@ -11,11 +11,11 @@ public static class ComputerShaderExtend
     public static void DispatchScaled(this ComputeShader comp, int kernel, int xCount, int yCount, int zCount)
     {
         uint xs, ys, zs;
-        comp.GetKernelThreadGroupSizes(kernel,out xs,out ys,out zs);
+        comp.GetKernelThreadGroupSizes(kernel, out xs, out ys, out zs);
         comp.Dispatch(kernel,
-            Mathf.CeilToInt(xCount/(float)xs),
-            Mathf.CeilToInt(yCount/(float)ys),
-            Mathf.CeilToInt(zCount/(float)zs));
+            Mathf.CeilToInt(xCount / (float)xs),
+            Mathf.CeilToInt(yCount / (float)ys),
+            Mathf.CeilToInt(zCount / (float)zs));
     }
 }
 

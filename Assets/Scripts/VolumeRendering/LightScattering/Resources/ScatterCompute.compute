@@ -10,6 +10,7 @@
 #pragma kernel LightPoint
 #pragma kernel LightSpot
 #pragma kernel LightSpotShadow SCATTER_SHADOW
+#pragma kernel LightSpotShadowCascade SCATTER_SHADOW SHADOW_CASCADE
 
 #pragma kernel LightClear
 
@@ -117,9 +118,9 @@ float _ZoneRadiusSqr;
 
 Texture2D _BlueNoise;
 
-#define PI 3.141592657f
-
-
+#define PI 3.141592657
+#define RAYLEIGH_CONST 0.05968310365946
+#define MIE_CONST 0.0795774715459476
 float3 IDToUv(uint3 id, float zcenter) {
 	return saturate(float3((id.x + 0.5f) / _VaporResolution.x, (id.y + 0.5f) / _VaporResolution.y, (id.z + zcenter) / _VaporResolution.z));
 }
@@ -173,16 +174,20 @@ float GetShadow(float3 world, float z) {
 	}
 }
 
-//Atmospheric functions
 float RayleighPhase(float cosTheta) {
-	return 1.0f + cosTheta * cosTheta;
+	return RAYLEIGH_CONST*(1.0f + cosTheta * cosTheta);
 }
 
 float MiePhase(float cosTheta, float g) {
-	float gSqr = g * g;
-	return min(10.0f, 0.5f * (1 - gSqr) / pow(abs(1 + gSqr - 2 * g * cosTheta), 1.5f));
+	float gSqr = g*g;
+	return min(10.0f, MIE_CONST * (1 - gSqr) / pow(abs(1 + gSqr - 2 * g * cosTheta), 1.5f));
 }
 
+float SchlickPhase(float cosTheta,float g){
+	float gTri = g * g * g;
+	float k = 1.55 * g - 0.55 * gTri;
+	return min(10.0f,MIE_CONST * ( (1-k*k) / ((1+k*cosTheta)*(1+k*cosTheta))));
+}
 
 float _AtmosphereRadiusSqr;
 
@@ -208,7 +213,7 @@ float3 GetRayleighDir(float3 worldPos, float3 lightDir, float3 lightColor) {
 
 	//Apply rayleigh & Mie scattering
 	lightColor *= pow(saturate(_RayleighCross.rgb), lightDist);
-	float m = MiePhase(cosTheta, _MieScatter.a);
+	float m = SchlickPhase(cosTheta, _MieScatter.a);
 	return (rayleighLight + m * _MieScatter.rgb) * lightColor;
 }
 
@@ -227,7 +232,7 @@ float3 GetRayleigh(float3 worldPos, float3 lightDif, float3 lightColor) {
 	return (rayleighLight + PI / 4) * lightColor;
 }
 
-float GetFaloff(float3 dd, float range) {
+float GetFallOff(float3 dd, float range) {
 	float lightDistanceSqr = dot(dd, dd);
 	float ratio2 = lightDistanceSqr * range;
 	float num = saturate(1.0f - (ratio2 * ratio2));
@@ -357,7 +362,7 @@ void LightSpotMain(uint3 id : SV_DispatchThreadID) {
 	if (lightCoord.z > 0) {
 		float3 direction = normalize(_CameraPos.xyz - worldPos);
 		float3 dd = worldPos - _LightPosRange.xyz;
-		float faloff = GetFaloff(dd, _LightPosRange.w);
+		float faloff = GetFallOff(dd, _LightPosRange.w);
 
 		if (faloff > 0) {
 #if SCATTER_SHADOW
@@ -391,6 +396,11 @@ void LightSpotShadow(uint3 id : SV_DispatchThreadID) {
 }
 
 [numthreads(4, 4, 4)]
+void LightSpotShadowCascade(uint3 id : SV_DispatchThreadID) {
+	LightSpotMain(id);
+}
+
+[numthreads(4, 4, 4)]
 void LightPoint(uint3 id : SV_DispatchThreadID) {
 	id += _LightWriteLower;
 	float3 worldPos = IDToWorld(id, 0.5f);
@@ -398,7 +408,7 @@ void LightPoint(uint3 id : SV_DispatchThreadID) {
 
 	float3 direction = normalize(_CameraPos.xyz - worldPos);
 	float3 dd = worldPos - _LightPosRange.xyz;
-	float faloff = GetFaloff(dd, _LightPosRange.w);
+	float faloff = GetFallOff(dd, _LightPosRange.w);
 
 	if (faloff > 0) {
 		float3 scatter = GetRayleigh(worldPos, dd, _LightColor.rgb);
@@ -494,7 +504,7 @@ void CustomLightWrite(uint3 id : SV_DispatchThreadID) {
 		//As the light is placed in the centre of the box, the box appears to be filled from the centre
 		float3 direction = normalize(_CameraPos.xyz - worldPos);
 		float3 dd = worldPos - _LightPosRange.xyz;
-		float faloff = GetFaloff(dd, _LightPosRange.w);
+		float faloff = GetFallOff(dd, _LightPosRange.w);
 
 		if (faloff > 0) {
 			//Work out the shadows here:

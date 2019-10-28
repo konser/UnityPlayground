@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 708c9696bc514bdaae9f51008958b2b5, type: 3}
   m_Name: BlendToSetting
   m_EditorClassIdentifier: 
-  albedo: {r: 0.3490566, g: 0.34082413, b: 0.34082413, a: 1}
-  extinction: 0.2
-  emission: {r: 0.3301887, g: 0.3005963, b: 0.3005963, a: 1}
-  ambient: {r: 0.6792453, g: 0.3492346, b: 0.3492346, a: 1}
+  albedo: {r: 0.6226415, g: 0.61383057, b: 0.61383057, a: 1}
+  extinction: 0.15
+  emission: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
+  ambient: {r: 0.6320754, g: 0.6320754, b: 0.6320754, a: 1}
   heightGradient:
     start: 0
     end: 100

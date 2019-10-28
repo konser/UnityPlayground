@@ -92,7 +92,7 @@ public class Scattering : MonoBehaviour
     public float NoisePower = 2.5f;
     public Texture2D NoiseTexture;
 
-    [HideInInspector] public Texture2D SpotCookie;
+    public Texture2D SpotCookie;
     Texture2D m_blueNoiseTex;
 
     CullingGroup m_cullGroup;
@@ -190,7 +190,7 @@ public class Scattering : MonoBehaviour
         ZoneKernel = m_vaporCompute.FindKernel("ZoneWrite");
         CustomLightKernel = m_vaporCompute.FindKernel("CustomLightWrite");
         LightPointKernel = m_vaporCompute.FindKernel("LightPoint");
-        //LightSpotKernel = new ScatterKernel(m_vaporCompute, "LightSpot");
+        LightSpotKernel = new ScatterKernel(m_vaporCompute, "LightSpot");
         LightDirKernel = new ScatterKernel(m_vaporCompute, "LightDirectional");
         m_lightClearKernel = m_vaporCompute.FindKernel("LightClear");
         m_scatterKernel = m_vaporCompute.FindKernel("Scatter");
@@ -251,7 +251,6 @@ public class Scattering : MonoBehaviour
         tex.Create();
     }
 
-    //TODO: This jitter doesn't seem ideal
     float GetHaltonValue(int index, int radix)
     {
         float result = 0f;
@@ -323,15 +322,15 @@ public class Scattering : MonoBehaviour
         //Get direction light & bind random acess textures
         foreach (ScatterObject vap in ScatterObject.s_objList)
         {
-            var vaporLight = vap as ScatterLight;
+            var scatterLight = vap as ScatterLight;
 
-            if (vaporLight == null || !vaporLight.HasShadow || vaporLight.LightType != LightType.Directional)
+            if (scatterLight == null || !scatterLight.HasShadow || scatterLight.LightType != LightType.Directional)
             {
                 continue;
             }
 
-            vaporLight.CreateShadowResources();
-            Graphics.SetRandomWriteTarget(1, vaporLight.MatrixBuffer);
+            scatterLight.CreateShadowResources();
+            Graphics.SetRandomWriteTarget(1, scatterLight.MatrixBuffer);
             //Graphics.SetRandomWriteTarget(6, vaporLight.LightSplitsBuffer);
         }
 
@@ -473,7 +472,6 @@ public class Scattering : MonoBehaviour
 
     void DoComputeSteps()
     {
-        //TODO: Could switch between eyes? Would slightly blur the fog -> Probably nice
         if (Camera.current.stereoEnabled && Camera.current.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
         {
             _setting = Setting; //Do update default _setting if it's null
@@ -540,7 +538,7 @@ public class Scattering : MonoBehaviour
             float zc1 = far / near;
             m_vaporCompute.SetVector("_ZBufferParams", new Vector4(zc0, zc1, zc0 / far, zc1 / far));
 
-            for (int i = 0; i < 11; ++i)
+            for (int i = 0; i < 12; ++i)
             {
                 m_vaporCompute.SetTexture(i, "_BlueNoise", m_blueNoiseTex);
             }

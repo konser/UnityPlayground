@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 708c9696bc514bdaae9f51008958b2b5, type: 3}
   m_Name: DefaultLightScatterSetting
   m_EditorClassIdentifier: 
-  albedo: {r: 0.23584908, g: 0.23584908, b: 0.23584908, a: 1}
-  extinction: 0.28
-  emission: {r: 0.7264151, g: 0.7264151, b: 0.7264151, a: 1}
-  ambient: {r: 0.7264151, g: 0.7264151, b: 0.7264151, a: 1}
+  albedo: {r: 0.8207547, g: 0.8207547, b: 0.8207547, a: 1}
+  extinction: 0.2
+  emission: {r: 0.7075472, g: 0.7075472, b: 0.7075472, a: 1}
+  ambient: {r: 0.7735849, g: 0.7735849, b: 0.7735849, a: 1}
   heightGradient:
-    start: 1.73
-    end: 0
+    start: 0
+    end: 100.46
     gradient:
       serializedVersion: 2
-      key0: {r: 0.3018868, g: 0.3018868, b: 0.3018868, a: 1}
+      key0: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
       key1: {r: 1, g: 1, b: 1, a: 1}
       key2: {r: 1, g: 1, b: 1, a: 0}
       key3: {r: 1, g: 1, b: 1, a: 0}
@@ -49,20 +49,20 @@ MonoBehaviour:
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
   distanceGradient:
-    start: 4.5
-    end: 10
+    start: 0
+    end: 389.6
     gradient:
       serializedVersion: 2
-      key0: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+      key0: {r: 0.3679245, g: 0.3679245, b: 0.3679245, a: 1}
       key1: {r: 1, g: 1, b: 1, a: 1}
-      key2: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 0}
+      key2: {r: 0.9811321, g: 0.9811321, b: 0.9811321, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
       key5: {r: 0, g: 0, b: 0, a: 0}
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
       ctime0: 0
-      ctime1: 65535
+      ctime1: 47031
       ctime2: 65535
       ctime3: 0
       ctime4: 0
@@ -78,5 +78,5 @@ MonoBehaviour:
       atime6: 0
       atime7: 0
       m_Mode: 0
-      m_NumColorKeys: 2
+      m_NumColorKeys: 3
       m_NumAlphaKeys: 2

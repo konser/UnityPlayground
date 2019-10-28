@@ -20,6 +20,12 @@ public class OrbitCamera : MonoBehaviour
 
     void Start()
     {
+        target = GameObject.FindGameObjectWithTag("Player").transform.Find("CameraFollowerPoint");
+        if (target == null)
+        {
+            Debug.LogError("没有找到Player对象");
+            return;
+        }
         Vector3 angles = transform.eulerAngles;
         x = angles.y;
         y = angles.x;
@@ -39,10 +45,10 @@ public class OrbitCamera : MonoBehaviour
             distance = Mathf.Clamp(distance - Input.GetAxis("Mouse ScrollWheel") * 5, distanceMin, distanceMax);
 
             RaycastHit hit;
-            if (Physics.Linecast(target.position, transform.position, out hit))
-            {
-                distance -= hit.distance;
-            }
+            //if (Physics.Linecast(target.position, transform.position, out hit))
+            //{
+            //    distance -= hit.distance;
+            //}
             Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
             Vector3 position = rotation * negDistance + target.position;
 
