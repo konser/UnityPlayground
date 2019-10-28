@@ -1,4 +1,4 @@
-Shader "Volume/Scattering"{
+Shader "ShaderToyScattering"{
     Properties
 	{
 		_MainTex("Texture", 2D) = "white" {}

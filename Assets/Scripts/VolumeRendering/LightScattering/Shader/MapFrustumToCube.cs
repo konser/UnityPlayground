@@ -2,6 +2,7 @@
 using System.Collections;
 using JetBrains.Annotations;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 public class MapFrustumToCube : MonoBehaviour
 {

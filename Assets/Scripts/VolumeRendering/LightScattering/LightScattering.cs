@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+using UnityEngine.Rendering;
 
 [ExecuteInEditMode, ImageEffectAllowedInSceneView]
 public class LightScattering : MonoBehaviour
@@ -6,6 +8,7 @@ public class LightScattering : MonoBehaviour
     public Shader effectShader;
     public Transform lightPos;
     private Material _effectMaterial;
+
     public Material effectMaterial
     {
         get
