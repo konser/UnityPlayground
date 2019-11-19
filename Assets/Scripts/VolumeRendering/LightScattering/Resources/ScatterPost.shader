@@ -83,9 +83,7 @@ Shader "Hidden/ScatterPost" {
 					//float4 coord = UnityStereoScreenSpaceUVAdjust(i.texcoord, _MainTex_ST);
 					float4 coord = i.texcoord;
 					float3 world = GetWorldPos(coord.xy, i.texcoord.xy);
-
 					float4 color = tex2D(_MainTex, coord);
-
 					float3 uv = WorldToVaporUv(world);
 					float4 fog = tex3Dlod(_VaporFogTexture, float4(uv, 0));
 
