@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-
+using System.Collections.Generic;
 public static class Utility
 {
     public static Vector3 XZ(this Vector3 v)
@@ -16,7 +16,193 @@ public static class Utility
     {
         return new Vector3(v.x(),0,v.y());
     }
+    private static float Frac0(float x)
+    {
+        return x - Mathf.Floor(x);
+    }
 
+    private static float Frac1(float x)
+    {
+        return 1 - x + Mathf.Floor(x);
+    }
+
+    private static Terrain nearestTerrain;
+    public static float GetTerrainHeight(Vector3 pos)
+    {
+        if (Terrain.activeTerrains == null || Terrain.activeTerrains.Length == 0)
+        {
+            return 0;
+        }
+        nearestTerrain = null;
+        for (int i = 0; i < Terrain.activeTerrains.Length; i++)
+        {
+            Vector3 terrainPosMin = Terrain.activeTerrains[i].GetPosition();
+            Vector3 terrainPosMax = terrainPosMin + Terrain.activeTerrains[i].terrainData.size;
+            if (pos.x >= terrainPosMin.x && pos.x <= terrainPosMax.x && pos.z >= terrainPosMin.z && pos.z <= terrainPosMax.z)
+            {
+                nearestTerrain = Terrain.activeTerrains[i];
+            }
+        }
+        if (nearestTerrain != null)
+        {
+            return nearestTerrain.SampleHeight(pos) + nearestTerrain.GetPosition().y;
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// 给定起点 终点 网格尺寸计算出经过的格子索引 (x,y)
+    /// </summary>
+    public static void GridTraverse(Vector3 start, Vector3 end, float gridSize, ref List<Vector2Int> indexList)
+    {
+        start /= gridSize;
+        end /= gridSize;
+        float tMaxX, tMaxY, tDeltaX, tDeltaY;
+        float dx = end.x - start.x;
+        float dy = end.z - start.z;
+        int signX = (dx > 0 ? 1 : (dx < 0 ? -1 : 0));
+        int signY = (dy > 0 ? 1 : (dy < 0 ? -1 : 0));
+        if (dx != 0)
+        {
+            tDeltaX = Mathf.Min(signX / dx, float.MaxValue);
+        }
+        else
+        {
+            tDeltaX = float.MaxValue;
+        }
+
+        if (signX > 0)
+        {
+            tMaxX = tDeltaX * Frac1(start.x);
+        }
+        else
+        {
+            tMaxX = tDeltaX * Frac0(start.x);
+        }
+
+
+        if (dy != 0)
+        {
+            tDeltaY = Mathf.Min(signY / dy, float.MaxValue);
+        }
+        else
+        {
+            tDeltaY = float.MaxValue;
+        }
+
+        if (signY > 0)
+        {
+            tMaxY = tDeltaY * Frac1(start.z);
+        }
+        else
+        {
+            tMaxY = tDeltaY * Frac0(start.z);
+        }
+
+        int idx = (int)start.x;
+        int idy = (int)start.z;
+        indexList.Clear();
+        indexList.Add(new Vector2Int(idx, idy));
+        while (true)
+        {
+            if (tMaxX < tMaxY)
+            {
+                tMaxX = tMaxX + tDeltaX;
+                idx += signX;
+            }
+            else
+            {
+                tMaxY = tMaxY + tDeltaY;
+                idy += signY;
+            }
+            if (tMaxX > 1 && tMaxY > 1)
+            {
+                break;
+            }
+
+            indexList.Add(new Vector2Int(idx, idy));
+        }
+        indexList.Add(new Vector2Int((int)end.x, (int)end.z));
+    }
+
+    public static void GridTraverse(Vector3 start, Vector3 end, float gridSize, ref List<Vector2Int> indexList,ref List<Vector3> intersection)
+    {
+        start /= gridSize;
+        end /= gridSize;
+        float tMaxX, tMaxY, tDeltaX, tDeltaY;
+        float dx = end.x - start.x;
+        float dy = end.z - start.z;
+        int signX = (dx > 0 ? 1 : (dx < 0 ? -1 : 0));
+        int signY = (dy > 0 ? 1 : (dy < 0 ? -1 : 0));
+        Vector3 dir = ((end.XZ()) - (start.XZ())).normalized;
+        if (dx != 0)
+        {
+            tDeltaX = Mathf.Min(signX / dx, float.MaxValue);
+        }
+        else
+        {
+            tDeltaX = float.MaxValue;
+        }
+
+        if (signX > 0)
+        {
+            tMaxX = tDeltaX * Frac1(start.x);
+        }
+        else
+        {
+            tMaxX = tDeltaX * Frac0(start.x);
+        }
+
+
+        if (dy != 0)
+        {
+            tDeltaY = Mathf.Min(signY / dy, float.MaxValue);
+        }
+        else
+        {
+            tDeltaY = float.MaxValue;
+        }
+
+        if (signY > 0)
+        {
+            tMaxY = tDeltaY * Frac1(start.z);
+        }
+        else
+        {
+            tMaxY = tDeltaY * Frac0(start.z);
+        }
+
+        int idx = (int)start.x;
+        int idy = (int)start.z;
+        indexList.Clear();
+        indexList.Add(new Vector2Int(idx, idy));
+
+        intersection.Clear();
+        while (true)
+        {
+            if (tMaxX < tMaxY)
+            {
+                tMaxX = tMaxX + tDeltaX;
+                idx += signX;
+                float length = tMaxX / dir.x;
+                intersection.Add(gridSize *(start + length * dir));
+            }
+            else
+            {
+                tMaxY = tMaxY + tDeltaY;
+                idy += signY;
+                float length = tMaxY / dir.z;
+                intersection.Add(gridSize * (start + length * dir));
+            }
+            if (tMaxX > 1 && tMaxY > 1)
+            {
+                break;
+            }
+
+            indexList.Add(new Vector2Int(idx, idy));
+        }
+        indexList.Add(new Vector2Int((int)end.x, (int)end.z));
+    }
     #region Debug draw
 
     public static void DrawGreenUpLine(Vector3 pos, float time)
