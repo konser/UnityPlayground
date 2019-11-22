@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
@@ -71,6 +72,8 @@ public class PathfindingTest : MonoBehaviour
     private int areaMaskDetail;
     private int areaMaskWalkable;
     public bool hasAbstractPath = false;
+
+    public NavmeshTileLink tileLink;
     private void Awake()
     {
         mapGridSize =(int) (8192.0f / tileSize);
@@ -95,7 +98,10 @@ public class PathfindingTest : MonoBehaviour
         {
             FindDetailedPath();
         }
-
+        if (hasAbstractPath == false)
+        {
+            return;
+        }
         if (Vector3.Distance(agent.transform.position, dest.transform.position) < 2.5f)
         {
             agent.enabled = false;
@@ -106,10 +112,10 @@ public class PathfindingTest : MonoBehaviour
         CheckUnusedLink();
 
         GenerateDetailedNavmesh();
-
-        if (!agent.hasPath && hasAbstractPath)
+        
+        if ((!agent.hasPath && hasAbstractPath) || agent.isStopped)
         {
-            Debug.Log("Find path");
+            //Debug.Log("Find path");
             FindDetailedPath();
         }
         // debug
@@ -148,24 +154,36 @@ public class PathfindingTest : MonoBehaviour
         agent.areaMask = areaMaskDetail;
         NavmeshTile farActiveTile = null;
         Vector2Int currentIndex = new Vector2Int(currentTile.tileIndexX, currentTile.tileIndexZ);
+        foreach (KeyValuePair<Vector2Int, NavmeshTile> tPair in loadedTileDic)
+        {
+            NavmeshTile tile = tPair.Value;
+            if (tile.isActive && tile.ContainsPosition(dest.transform.position))
+            {
+                agent.SetDestination(dest.transform.position);
+                return;
+            }
+        }
         if (currentTile.ContainsPosition(dest.transform.position))
         {
             agent.SetDestination(dest.transform.position);
             return;
         }
-
-        Vector3 dir = (abstractPath[abstractPathVisitedIndex].XZ() - agent.transform.position.XZ()).normalized;
+        Vector3 curPos = currentTile.TileCenterPos().XZ();
+        //Vector3 curPos = agent.transform.position.XZ();
+        Vector3 dir = (abstractPath[abstractPathVisitedIndex].XZ() - curPos).normalized;
         float maxDist = float.NegativeInfinity;
         foreach (KeyValuePair<Vector2Int, NavmeshTile> tPair in loadedTileDic)
         {
             // 防止回到走过的寻路网格
-            Vector3 nearTileDir = (tPair.Value.TileCenterPos().XZ() - agent.transform.position.XZ()).normalized;
+            Vector3 nearTileDir = (tPair.Value.TileCenterPos().XZ() - curPos).normalized;
             float dot = Vector3.Dot(dir, nearTileDir);
+            
             if (dot < 0)
             {
                 continue;
             }
-            float curDist = Vector2Int.Distance(currentIndex, tPair.Value.tileIndex);
+            float curDist = dot;
+           // float curDist = Vector2Int.Distance(currentIndex, tPair.Value.tileIndex);
             if (curDist > maxDist)
             {
                 farActiveTile = tPair.Value;
@@ -243,8 +261,6 @@ public class PathfindingTest : MonoBehaviour
     }
 
     #region Detailed path calculate
-
-
     private List<Vector2Int> nearbyTiles = new List<Vector2Int>();
     private HashSet<Vector2Int> visitedTiles = new HashSet<Vector2Int>();
     private Dictionary<Vector2Int, NavmeshTile> loadedTileDic = new Dictionary<Vector2Int, NavmeshTile>();
@@ -285,7 +301,7 @@ public class PathfindingTest : MonoBehaviour
         navmeshlink.width = tileSize*0.8f;
         navmeshlink.autoUpdate = true;
         navmeshlink.bidirectional = true;
-        navmeshlink.area = NavMesh.GetAreaFromName("Detail");
+        navmeshlink.area = NavMesh.GetAreaFromName("Walkable");
         navmeshlink.startPoint = new Vector3(0,0,-1f);
         navmeshlink.endPoint = new Vector3(0,0,1f);
         LinkInfo link = new LinkInfo(navmeshlink);
@@ -358,14 +374,15 @@ public class PathfindingTest : MonoBehaviour
                         {
                             link.link.transform.forward = Vector3.forward;
                         }
-                        link.EnableLink(activeTiles[i],activeTiles[j]);
+                        link.EnableLink(activeTiles[i], activeTiles[j]);
                         activeLinks.Add(link);
+                        var linkInfo = tileLink.GenerateNavmeshLink(loadedTileDic[activeTiles[i]], loadedTileDic[activeTiles[j]]);
+                        linkInfo.CreateNavmeshLink();
                     }
                 }
             }
         }
     }
-
     private void CheckUnusedLink()
     {
         for (int i = 0; i < linkPool.Count; i++)
@@ -383,7 +400,6 @@ public class PathfindingTest : MonoBehaviour
             }
         }
     }
-
 
     // Tile进出时的回调
     private void OnTileEnterCallback(int x, int z)
@@ -407,7 +423,7 @@ public class PathfindingTest : MonoBehaviour
     {
         Vector2Int currentExit = new Vector2Int(x, z);
         tileToUnload.Add(currentExit);
-        for (int i = tileToUnload.Count-2; i >=0; i--)
+        for (int i = tileToUnload.Count-1; i >=0; i--)
         {
             Vector2Int waitForUnload = tileToUnload[i];
             if (loadedTileDic.ContainsKey(waitForUnload))

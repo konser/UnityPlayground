@@ -14,8 +14,8 @@ public class NavmeshTile : MonoBehaviour
     public Action<int,int> OnTileExit;
     public Action<int, int> OnTileEnter;
     private int areaMask;
-
     private Vector2Int _tileIndex;
+
     public Vector2Int tileIndex
     {
         get
@@ -30,7 +30,7 @@ public class NavmeshTile : MonoBehaviour
         surface = this.GetComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Volume;
         // 比实际网格宽一点点
-        surface.size = new Vector3(size+1f,256f,size+1f);
+        surface.size = new Vector3(size,256f,size);
         surface.center = Vector3.zero;
         boxCollider = this.gameObject.AddComponent<BoxCollider>();
         boxCollider.center = Vector3.zero;
@@ -86,6 +86,7 @@ public class NavmeshTile : MonoBehaviour
 
     public bool ContainsPosition(Vector3 pos)
     {
+
         int x = (int)(pos.x / size);
         int z = (int)(pos.z / size);
         if (x == tileIndexX && z == tileIndexZ)
