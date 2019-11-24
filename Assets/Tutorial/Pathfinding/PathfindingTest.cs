@@ -16,6 +16,7 @@ public class TileInfo
 public class LinkInfo
 {
     public LinkInfo(NavMeshLink l)
+
     {
         link = l;
     }
@@ -182,8 +183,8 @@ public class PathfindingTest : MonoBehaviour
             {
                 continue;
             }
-            float curDist = dot;
-           // float curDist = Vector2Int.Distance(currentIndex, tPair.Value.tileIndex);
+            //float curDist = dot;
+            float curDist = Vector2Int.Distance(currentIndex, tPair.Value.tileIndex);
             if (curDist > maxDist)
             {
                 farActiveTile = tPair.Value;
