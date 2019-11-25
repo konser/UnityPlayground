@@ -1,5 +1,7 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
+
 namespace RuntimePathfinding
 {
     /// <summary>
@@ -17,7 +19,7 @@ namespace RuntimePathfinding
         {
             if (_inited == false)
             {
-                _stopwatch.Start();
+                _stopwatch = Stopwatch.StartNew();
                 _inited = true;
             }
             else

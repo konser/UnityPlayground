@@ -17,10 +17,19 @@ namespace RuntimePathfinding
             }
         }
 
+        /// <summary>
+        /// 将对象回收之前需要进行的处理
+        /// </summary>
+        public virtual void BeforeReturnToPool()
+        {
+
+        }
+
         [System.NonSerialized]
         ObjectPool _poolInstance;
         public void ReturnToPool()
         {
+            BeforeReturnToPool();
             if (pool)
             {
                 pool.AddObject(this);
@@ -31,13 +40,13 @@ namespace RuntimePathfinding
             }
         }
     
-        public T GetPooledInstance<T> () where T : PooledObject
-        {
-            if (!_poolInstance)
-            {
-                _poolInstance = ObjectPool.GetPool(this);
-            }
-            return (T)_poolInstance.GetObject();
-        }
+        //public T GetPooledInstance<T> () where T : PooledObject
+        //{
+        //    if (!_poolInstance)
+        //    {
+        //        _poolInstance = ObjectPool.GetPool(this);
+        //    }
+        //    return (T)_poolInstance.GetObject();
+        //}
     }
 }

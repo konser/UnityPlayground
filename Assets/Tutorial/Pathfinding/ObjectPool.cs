@@ -36,19 +36,19 @@ namespace RuntimePathfinding
         /// <summary>
         /// 从对象池中获取一个可用对象
         /// </summary>
-        public PooledObject GetObject()
+        public T GetObject<T>() where T:PooledObject
         {
-            PooledObject obj;
+            T obj;
             int lastAvailableIndex = _availableObjectList.Count - 1;
             if(lastAvailableIndex >= 0)
             {
-                obj = _availableObjectList[lastAvailableIndex];
+                obj = (T)_availableObjectList[lastAvailableIndex];
                 _availableObjectList.RemoveAt(lastAvailableIndex);
                 obj.gameObject.SetActive(true);
             }
             else
             {
-                obj = Instantiate<PooledObject>(_prefab);
+                obj = Instantiate<T>((T)_prefab);
                 obj.transform.SetParent(transform, false);
                 obj.pool = this;
             }

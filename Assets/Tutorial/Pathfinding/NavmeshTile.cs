@@ -1,143 +1,114 @@
 ﻿using System;
-using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.AI;
-
-public class NavmeshTile : MonoBehaviour
+namespace RuntimePathfinding
 {
-    public NavMeshSurface surface;
-    public bool isActive;
-    public float size = 32.0f;
-    private BoxCollider boxCollider;
-    public int tileIndexX;
-    public int tileIndexZ;
-    public Action<int,int> OnTileExit;
-    public Action<int, int> OnTileEnter;
-    private int areaMask;
-    private Vector2Int _tileIndex;
-
-    public Vector2Int tileIndex
+    /// <summary>
+    /// 运行时计算的部分区域详细Navmesh
+    /// </summary>
+    public class NavmeshTile : PooledObject
     {
-        get
+        public Vector3 tileCenterPos
         {
-            _tileIndex.x = tileIndexX;
-            _tileIndex.y = tileIndexZ;
-            return _tileIndex;
+            get { return _tileCenterPos; }
         }
-    }
-    private void Awake()
-    {
-        surface = this.GetComponent<NavMeshSurface>();
-        surface.collectObjects = CollectObjects.Volume;
-        // 比实际网格宽一点点
-        surface.size = new Vector3(size,256f,size);
-        surface.center = Vector3.zero;
-        boxCollider = this.gameObject.AddComponent<BoxCollider>();
-        boxCollider.center = Vector3.zero;
-        boxCollider.isTrigger = true;
-        boxCollider.size = new Vector3(size,size,size);
-        areaMask = 1 << NavMesh.GetAreaFromName("Detail");
-    }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        public int tileCoordX
         {
-            surface.BuildNavMesh();
+            get { return _tileIdentifier.coordX; }
         }
-    }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.CompareTag("Player"))
+        public int tileCoordZ
         {
-            OnTileEnter?.Invoke(tileIndexX,tileIndexZ);
+            get { return _tileIdentifier.coordZ; }
         }
-    }
 
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.CompareTag("Player"))
+        public int sequenceIndex
         {
-            OnTileExit?.Invoke(tileIndexX, tileIndexZ);
+            get { return _tileIdentifier.sequenceIndex; }
         }
-    }
 
-    public Vector3 GetNavmeshPosNearTileCenter()
-    {
-        float dist = 16.0f;
-        NavMeshHit hit = default;
-        bool hasHit = false;
-        for (int i = 0; i < 5; i++)
+        private NavMeshSurface _surface;
+        //private List<NavmeshTileLink> _previousTileLinkList; // 假设当前区块为B，该Link指A-B
+        private List<NavmeshTileLink> _nextTileLinkList = new List<NavmeshTileLink>(16); // 该Link指B-C
+
+        private TileIdentifier _tileIdentifier;
+        private float _tileSize;
+        private Vector3 _tileCenterPos;
+        private Vector3 _tileLeftBottomPos;
+        private Vector3 _tileRightTopPos;
+        public void Init(PathfindingSetting setting)
         {
-            hasHit = NavMesh.SamplePosition(TileCenterPos(), out hit, dist, areaMask);
-            if (hasHit)
+            // 设置NavmeshSurface的参数
+            _surface = gameObject.GetComponent<NavMeshSurface>();
+            if(_surface == null)
             {
-                break;
+                _surface = gameObject.AddComponent<NavMeshSurface>();
             }
-            dist *= 2.0f;
+            _tileSize = setting.tileSize;
+
+            _surface.collectObjects = CollectObjects.Volume;
+            _surface.defaultArea = RuntimePathfinding.areaDetail;
+            _surface.center = Vector3.zero;
+            _surface.size = new Vector3(_tileSize+0.5f, _tileSize * 2.0f, _tileSize+0.5f);
         }
-        if (!hasHit)
+
+        public void BakeNavmeshTile(TileIdentifier tileIdentifier)
         {
-            Debug.LogError($"Tile ({tileIndexX},{tileIndexZ}) : 没找到寻路点");
+            _tileIdentifier = tileIdentifier;
+            SetTilePosition();
+            _surface.BuildNavMesh();
         }
-        return hit.position;
-    }
 
-    public bool ContainsPosition(Vector3 pos)
-    {
-
-        int x = (int)(pos.x / size);
-        int z = (int)(pos.z / size);
-        if (x == tileIndexX && z == tileIndexZ)
+        public bool ContainsPosition2D(Vector3 pos)
         {
-            return true;
-        }
-        return false;
-    }
-
-    public Vector3 TileCenterPos()
-    {
-        Vector3 pos = new Vector3(tileIndexX * size + 0.5f * size, 0, tileIndexZ * size + 0.5f * size);
-        float height = Utility.GetTerrainHeight(pos);
-        pos.y = height;
-        return pos;
-    }
-
-    public void EnableTile(int x,int z)
-    {
-        isActive = true;
-        boxCollider.enabled = true;
-        surface.enabled = true;
-        tileIndexX = x;
-        tileIndexZ = z;
-        this.transform.position = TileCenterPos();
-        surface.BuildNavMesh();
-        Debug.Log($"Build navmesh at ({tileIndexX},{tileIndexZ})");
-    }
-
-
-    public void DisableTile()
-    {
-        isActive = false;
-        surface.enabled = false;
-        boxCollider.enabled = false;
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (boxCollider != null)
-        {
-            if (isActive)
+            if (pos.x >= _tileLeftBottomPos.x && pos.x <= _tileRightTopPos.x &&
+                pos.z >= _tileLeftBottomPos.z && pos.z <= _tileRightTopPos.z)
             {
-                Handles.color = Color.green;
+                return true;
             }
-            else
+            return false;
+        }
+
+        public List<NavmeshTileLink> GetLinkListToNextTile()
+        {
+            return _nextTileLinkList;
+        }
+
+        private void SetTilePosition()
+        {
+            _tileCenterPos = new Vector3((_tileIdentifier.coordX+ 0.5f) * _tileSize, 0, (_tileIdentifier.coordZ + 0.5f) * _tileSize);
+            float height = Utility.GetTerrainHeight(_tileCenterPos);
+            _tileCenterPos.y = height;
+            _tileLeftBottomPos = new Vector3(_tileSize * _tileIdentifier.coordX,0, _tileSize * _tileIdentifier.coordZ); // Y值不重要 做2D判断用的
+            _tileRightTopPos = new Vector3(_tileSize * (_tileIdentifier.coordX + 1), 0, _tileSize *(_tileIdentifier.coordZ+1)); // Y值不重要 做2D判断用的
+            this.transform.position = _tileCenterPos;
+        }
+
+        public virtual void ReturnToPool()
+        {
+            base.ReturnToPool();
+            // 将Link回收至池子里
+            for (int i = 0; i < _nextTileLinkList.Count; i++)
             {
-                Handles.color = Color.red;
+               _nextTileLinkList[i].ReturnToPool();
             }
-            Handles.DrawWireCube(transform.position,new Vector3(boxCollider.size.x,0.01f,boxCollider.size.z));
+            _nextTileLinkList.Clear();
+        }
+
+        public void AddNextNavmeshLink(NavmeshTileLink link)
+        {
+            if (link == null)
+            {
+                return;
+            }
+            _nextTileLinkList.Add(link);
+        }
+
+        public override string ToString()
+        {
+            return $"[({tileCoordX},{tileCoordZ}) - {sequenceIndex}]";
         }
     }
-
 }
