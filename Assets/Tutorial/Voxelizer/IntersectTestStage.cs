@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -56,10 +57,12 @@ public class IntersectTestStage
             tasks.Add(Task.Factory.StartNew(IntersectTestDivide, startIndex[i]));
         }
 
+#if UNITY_EDITOR
         while (_completeCount < tasks.Count)
         {
-            UnityEditor.EditorUtility.DisplayProgressBar("Intersection","",(float)_completeCount/tasks.Count);
+            EditorUtility.DisplayProgressBar("Intersection","",(float)_completeCount/tasks.Count);
         }
+#endif
         return _voxels;
     }
 

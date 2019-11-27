@@ -2,7 +2,9 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -70,6 +72,7 @@ public class VoxelizerWithOctree : MonoBehaviour
     }
     private void IntersectTest()
     {
+#if UNITY_EDITOR
         GameObject go;
 
         // -- for debug
@@ -122,6 +125,7 @@ public class VoxelizerWithOctree : MonoBehaviour
         stopwatch.Stop();
         EditorUtility.ClearProgressBar();
         Debug.Log($"体素化完成，耗时:{stopwatch.ElapsedMilliseconds}ms");
+#endif
     }
 
     #region 多线程
@@ -162,6 +166,7 @@ public class VoxelizerWithOctree : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+#if UNITY_EDITOR
         if (Application.isPlaying == false || this.enabled == false)
         {
             return;
@@ -182,6 +187,7 @@ public class VoxelizerWithOctree : MonoBehaviour
         {
             octree.DebugDraw();
         }
+#endif
     }
 
     private void Display()

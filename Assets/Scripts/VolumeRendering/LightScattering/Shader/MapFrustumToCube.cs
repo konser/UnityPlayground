@@ -1,8 +1,7 @@
-﻿using UnityEngine;
-using System.Collections;
-using JetBrains.Annotations;
+﻿#if UNITY_EDITOR
 using UnityEditor;
-using UnityEngine.Rendering;
+#endif
+using UnityEngine;
 
 public class MapFrustumToCube : MonoBehaviour
 {
@@ -96,6 +95,7 @@ public class MapFrustumToCube : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+#if UNITY_EDITOR
         if (Application.isPlaying == false) return;
         Handles.color = Color.red;
         Handles.DrawLine(nearPlaneCenter, farPlaneCenter);
@@ -107,5 +107,6 @@ public class MapFrustumToCube : MonoBehaviour
                 4,5,5,6,6,7,7,4,
                 0,4,1,5,2,6,3,7
             });
+#endif
     }
 }

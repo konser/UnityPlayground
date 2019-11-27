@@ -26,28 +26,30 @@ public static class Utility
         return 1 - x + Mathf.Floor(x);
     }
 
-    private static Terrain nearestTerrain;
+    private static Terrain[] terrains;
     public static float GetTerrainHeight(Vector3 pos)
     {
-        if (Terrain.activeTerrains == null || Terrain.activeTerrains.Length == 0)
+        if (terrains == null)
         {
-            return 0;
+            terrains = Terrain.activeTerrains;
         }
-        nearestTerrain = null;
-        for (int i = 0; i < Terrain.activeTerrains.Length; i++)
+
+        if (terrains == null || terrains.Length == 0)
         {
-            Vector3 terrainPosMin = Terrain.activeTerrains[i].GetPosition();
-            Vector3 terrainPosMax = terrainPosMin + Terrain.activeTerrains[i].terrainData.size;
+            return 0.0f;
+        }
+
+        
+        for (int i = 0; i < terrains.Length; i++)
+        {
+            Vector3 terrainPosMin = terrains[i].GetPosition();
+            Vector3 terrainPosMax = terrainPosMin + terrains[i].terrainData.size;
             if (pos.x >= terrainPosMin.x && pos.x <= terrainPosMax.x && pos.z >= terrainPosMin.z && pos.z <= terrainPosMax.z)
             {
-                nearestTerrain = Terrain.activeTerrains[i];
+                return terrains[i].SampleHeight(pos) + terrains[i].GetPosition().y;
             }
         }
-        if (nearestTerrain != null)
-        {
-            return nearestTerrain.SampleHeight(pos) + nearestTerrain.GetPosition().y;
-        }
-        return 0;
+        return 0f;
     }
 
     /// <summary>

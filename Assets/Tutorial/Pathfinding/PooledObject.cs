@@ -39,14 +39,5 @@ namespace RuntimePathfinding
                 Destroy(gameObject);
             }
         }
-    
-        //public T GetPooledInstance<T> () where T : PooledObject
-        //{
-        //    if (!_poolInstance)
-        //    {
-        //        _poolInstance = ObjectPool.GetPool(this);
-        //    }
-        //    return (T)_poolInstance.GetObject();
-        //}
     }
 }

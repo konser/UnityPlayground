@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 public struct TriangleInfo
@@ -71,6 +73,7 @@ public class TraverseSceneTriangleStage
         }
 
         //-----Progress bar
+#if UNITY_EDITOR
         int previousCount = 0;
         while (_completeCount < tasks.Count)
         {
@@ -81,6 +84,7 @@ public class TraverseSceneTriangleStage
             }
         }
         EditorUtility.ClearProgressBar();
+#endif
         //------------------------------------
         return _triangleList;
     }

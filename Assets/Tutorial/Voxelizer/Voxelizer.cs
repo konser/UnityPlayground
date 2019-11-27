@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 public class Voxelizer : MonoBehaviour
@@ -40,6 +42,7 @@ public class Voxelizer : MonoBehaviour
     [ContextMenu("Voxelize")]
     public void Voxelize()
     {
+#if UNITY_EDITOR
         InitComponents();
         // ground plane
         //GameObject go = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -101,6 +104,7 @@ public class Voxelizer : MonoBehaviour
             CreateSpanCube(spans, spanPrefab);
             //Destroy(go);
         }
+#endif
     }
 
     /// <summary>
@@ -109,6 +113,7 @@ public class Voxelizer : MonoBehaviour
     /// <returns></returns>
     public bool[,,] GetIntersectionResult()
     {
+#if UNITY_EDITOR
         // 遍历场景
         List<TriangleInfo> triangleList = _traverseSceneTriangleStage.RetreiveSceneTriangles();
         //_traverseSceneTriangleStage = null;
@@ -123,6 +128,8 @@ public class Voxelizer : MonoBehaviour
         //_intersectTestStage = null;
         EditorUtility.ClearProgressBar();
         return intersectionResult;
+#endif
+        return null;
     }
 
     [ContextMenu("CreateFromFile")]
@@ -136,6 +143,7 @@ public class Voxelizer : MonoBehaviour
 
     private void SaveResult(VoxelSpan[,] spanArray)
     {
+#if UNITY_EDITOR
         using (MemoryStream ms = new MemoryStream())
         {
             BinaryFormatter bf = new BinaryFormatter();
@@ -144,6 +152,7 @@ public class Voxelizer : MonoBehaviour
             File.WriteAllBytes("Assets/Resources/VoxelData/" + fileName+"_Merged.bytes",voxelBin);
         }
         AssetDatabase.Refresh();
+#endif
     }
 
     private void InitComponents()

@@ -49,5 +49,15 @@ namespace RuntimePathfinding
             _navmeshLink.startPoint = startOffset;
             _navmeshLink.endPoint = endOffset;
         }
+
+        public void EnableLink()
+        {
+            _navmeshLink.enabled = true;
+        }
+
+        public void DisableLink()
+        {
+            _navmeshLink.enabled = false;
+        }
     }
 }

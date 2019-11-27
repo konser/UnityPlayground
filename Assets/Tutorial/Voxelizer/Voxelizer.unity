@@ -692,6 +692,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c390f4bd11374c90843d5cfe85ba518c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  size: 0
   x: 0
   y: 0
   z: 0
@@ -1100,16 +1101,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   voxelizeBox: {fileID: 1383094310}
-  voxelSize: {x: 0.2, y: 0.2, z: 0.2}
+  voxelSize: {x: 0.1, y: 0.1, z: 0.1}
   spanPrefab: {fileID: 7517238422946647515, guid: b416591375b3cbf469c6270daa9a6d14,
     type: 3}
   antiSpanPrefab: {fileID: 7517238422946647515, guid: b416591375b3cbf469c6270daa9a6d14,
     type: 3}
+  gen3DNoise: 0
   octreeGroupTriangleCount: 16
   intersectionDivideAreaLength: 32
+  firstSpanBottomStartFromZero: 0
   showAntiSpan: 0
   showVoxelWire: 0
   showOctreeWire: 1
+  saveToFile: 0
+  fileName: 
 --- !u!4 &1383094312
 Transform:
   m_ObjectHideFlags: 0

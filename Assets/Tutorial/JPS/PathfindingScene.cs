@@ -549,6 +549,7 @@ public class PathfindingScene : MonoBehaviour
     private List<Node> _pathForDisplay = new List<Node>();
     private void OnDrawGizmosSelected()
     {
+#if UNITY_EDITOR
         if (!Application.isPlaying)
         {
             return;
@@ -576,5 +577,6 @@ public class PathfindingScene : MonoBehaviour
         Handles.DrawSolidDisc(new Vector3(startPos.x, 0.1f, startPos.y), Vector3.up, 0.8f);
         Handles.color = Color.blue;
         Handles.DrawSolidDisc(new Vector3(endPos.x, 0.1f, endPos.y), Vector3.up, 0.8f);
+#endif
     }
 }

@@ -1,5 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,7 +12,7 @@ namespace RuntimePathfinding
     /// <summary>
     /// 寻路请求数据
     /// </summary>
-    public struct PathfindingRequest
+    public class PathfindingRequest
     {
         public Vector3 start;
         public Vector3 destination;
@@ -42,6 +46,8 @@ namespace RuntimePathfinding
         public int sequenceIndex;
     }
 
+    // todo bugfix
+    // todo custom ai movement
     public class RuntimePathfinding : MonoBehaviour
     {
         static WaitForEndOfFrame _endOfFrame = new WaitForEndOfFrame();
@@ -51,6 +57,8 @@ namespace RuntimePathfinding
         public static int areaMaskWalkable;
         public static int areaBakeLink;
         public static int areaMaskBakeLink;
+        public static int areaTileConnection;
+        public static int areaMaskTileConnection;
         /// <summary>
         /// 寻路设置
         /// </summary>
@@ -75,20 +83,49 @@ namespace RuntimePathfinding
         private ObjectPool _tileLinkPool;
         private NavmeshLinkBakeArea _linkBakeArea;
         private Queue<PathfindingRequest> _requestQueue;
+        // 计算路径未达到终点的重算距离
+        private const float RECALCULATE_PATH_DISTANCE = 5.0f;
 
-        private void Start()
+        #region =========================Debug==========================
+        private List<TileIdentifier> identifiers = new List<TileIdentifier>();
+        private void OnDrawGizmos()
+        {
+            if (Application.isPlaying && identifiers.Count != 0)
+            {
+                foreach (TileIdentifier tIdentifier in identifiers)
+                {
+                    Vector3 pos = new Vector3((tIdentifier.coordX+0.5f) *setting.tileSize,0,(tIdentifier.coordZ+0.5f) *setting.tileSize);
+#if UNITY_EDITOR
+                    Handles.DrawWireCube(pos,new Vector3(setting.tileSize,0.1f,setting.tileSize));
+#endif
+                }
+            }
+        }
+
+        #endregion
+        private IEnumerator Start()
         {
             Initialize();
+            yield return new WaitForSeconds(5);
+            RequestPathfinding(new PathfindingRequest
+            {
+                agent = testAgent,
+                destination = destination.position,
+                start = testAgent.transform.position
+            });
         }
 
         public void Initialize()
         {
             areaDetail = NavMesh.GetAreaFromName("Detail");
-            areaMaskDetail = 1 << NavMesh.GetAreaFromName("Detail");
             areaWalkable = NavMesh.GetAreaFromName("Walkable");
-            areaMaskWalkable = 1 << NavMesh.GetAreaFromName("Walkable");
             areaBakeLink = NavMesh.GetAreaFromName("BakeLink");
-            areaMaskBakeLink = 1 << NavMesh.GetAreaFromName("BakeLink");
+            areaTileConnection = NavMesh.GetAreaFromName("TileConnection");
+
+            areaMaskDetail = 1 << areaDetail;
+            areaMaskWalkable = 1 << areaWalkable;
+            areaMaskBakeLink = 1 << areaBakeLink;
+            areaMaskTileConnection = 1 << areaTileConnection;
 
             if (setting.tilePrefab == null || setting.tileLinkPrefab == null)
             {
@@ -140,7 +177,7 @@ namespace RuntimePathfinding
             Vector3 start = request.start;
             Vector3 destination = request.destination;
             NavMeshAgent agent = request.agent;
-            Vector3[] abstractPath = new Vector3[36];
+            Vector3[] abstractPath = new Vector3[1000];
             int wayPointCount = 0;
             int currentSeqIndex = 0;
             int lastSeqIndex = -1;
@@ -150,7 +187,7 @@ namespace RuntimePathfinding
 
             List<TileIdentifier> passedTileList = MarkPassedNavmeshTile(ref abstractPath,ref wayPointCount);
             yield return _endOfFrame;
-
+            identifiers = passedTileList;
             while (!HasReachedDestination(agent,destination))
             {
                 // 检查当前所处区块是否变化
@@ -174,7 +211,6 @@ namespace RuntimePathfinding
 
                     GenerateDetailedPath(agent,activeTiles,destination);
                     yield return _endOfFrame;
-
                     TryMoveAgent();
                 }
             }
@@ -203,7 +239,7 @@ namespace RuntimePathfinding
             {
                 Vector3 currentPos = count == 0 ? pathResult[count] : pathResult[count - 1];
                 float distance = Vector3.Distance(currentPos, endPos);
-                if (distance > 5.0f)
+                if (distance > RECALCULATE_PATH_DISTANCE)
                 {
                     path.ClearCorners();
                     bool succeed = NavMesh.CalculatePath(currentPos, endPos, areaMask, path);
@@ -233,6 +269,7 @@ namespace RuntimePathfinding
                     break;
                 }
             }
+            Debug.Log(count);
         }
 
         // --------------标记粗略路径经过的区块------------
@@ -311,10 +348,7 @@ namespace RuntimePathfinding
             int idx = (int)start.x;
             int idy = (int)start.z;
 
-            if (indexList.Count == 0)
-            {
-                indexList.Add(new TileIdentifier(idx,idy,0));
-            }
+            AddTile(indexList, idx, idy);
 
             while (true)
             {
@@ -332,16 +366,31 @@ namespace RuntimePathfinding
                 {
                     break;
                 }
-
-                indexList.Add(new TileIdentifier(idx,idy,indexList.Count));
+                AddTile(indexList, idx, idy);
             }
-            indexList.Add(new TileIdentifier((int)end.x,(int)end.z,indexList.Count));
+            AddTile(indexList, (int)end.x, (int)end.z);
+        }
+
+        private bool AddTile(List<TileIdentifier> list, int idx, int idz)
+        {
+            bool contains = list.Any(l => { return l.coordX == idx && l.coordZ == idz; });
+            if (contains)
+            {
+                return false;
+            }
+            list.Add(new TileIdentifier(idx,idz,list.Count));
+            return true;
         }
 
         // --------------检查对象位置----------------
         // 判断寻路对象当前处于哪个tile
         private void CheckAgentCurrentPosition(NavMeshAgent agent, NavmeshTile[] tiles,ref int currentSeqIndex)
         {
+            if (agent.isOnNavMesh == false || agent.isStopped)
+            {
+                Debug.Log(agent.pathStatus);
+                Debug.DrawLine(agent.transform.position,agent.steeringTarget,Color.magenta,10f);
+            }
             if (tiles == null)
             {
                 currentSeqIndex = 0;
@@ -349,19 +398,20 @@ namespace RuntimePathfinding
             else
             {
                 Vector3 currentPos = agent.transform.position;
-                int count = 0;
+                int nextIndex = int.MaxValue;
                 for (int i = 0; i < tiles.Length; i++)
                 {
                     if (tiles[i] != null && tiles[i].ContainsPosition2D(currentPos))
                     {
-                        currentSeqIndex = tiles[i].sequenceIndex;
-                        count++;
+                        if (tiles[i].sequenceIndex < nextIndex && tiles[i].sequenceIndex > currentSeqIndex)
+                        {
+                            nextIndex = tiles[i].sequenceIndex;
+                        }
                     }
                 }
-
-                if (count == 0 || count > 1)
+                if (nextIndex != int.MaxValue)
                 {
-                    Debug.LogError($"当前所属Tile判定有误 -> {count}" );
+                    currentSeqIndex = nextIndex;
                 }
             }
         }
@@ -419,22 +469,13 @@ namespace RuntimePathfinding
             // 数组中第一个始终为当前所处的区块
             if (activeTiles[0] != null && activeTiles[1] != null)
             {
-                if (activeTiles[0].sequenceIndex >= activeTiles[1].sequenceIndex)
-                {
-                    Debug.LogError("eeeee");
-                }
                 if (activeTiles[0].GetLinkListToNextTile().Count == 0)
                 {
                     _linkBakeArea.BakeTileLink(activeTiles[0],activeTiles[1],_tileLinkPool);
                 }
             }
-
             if (activeTiles[1] != null && activeTiles[2] != null)
             {
-                if (activeTiles[1].sequenceIndex >= activeTiles[2].sequenceIndex)
-                {
-                    Debug.LogError("eeeee");
-                }
                 if (activeTiles[1].GetLinkListToNextTile().Count == 0)
                 {
                     _linkBakeArea.BakeTileLink(activeTiles[1], activeTiles[2], _tileLinkPool);
@@ -460,25 +501,55 @@ namespace RuntimePathfinding
             if (!nearFinalDestination)
             {
                 // TileB 的navmesh link
-                Vector3 pos = SelectPositionFromTileLink(activeTiles[1]);
+                Vector3 pos = SelectPositionFromTileLink(agent,activeTiles[0],activeTiles[1]);
                 agent.SetDestination(pos);
+                Debug.DrawLine(pos,pos + Vector3.up*30.0f,Color.white,5.0f);
             }
             else
             {
                 agent.SetDestination(finalDest);
             }
         }
-        List<NavmeshTileLink> _cacheNavmeshLinkList = new List<NavmeshTileLink>();
-        private Vector3 SelectPositionFromTileLink(NavmeshTile tile)
+        private NavMeshPath _navmeshPath;
+        private Vector3 SelectPositionFromTileLink(NavMeshAgent agent,NavmeshTile nearTile,NavmeshTile farTile)
         {
-            _cacheNavmeshLinkList.Clear();
-            _cacheNavmeshLinkList = tile.GetLinkListToNextTile();
-            if (_cacheNavmeshLinkList.Count == 0)
+            if (_navmeshPath == null)
             {
-                return Vector3.zero;
+                _navmeshPath = new NavMeshPath();
             }
-            int rand = Random.Range(0, _cacheNavmeshLinkList.Count - 1);
-            return _cacheNavmeshLinkList[rand].linkEndPos;
+            Vector3 agentPos = agent.transform.position;
+            Vector3 targetPos = agentPos;
+            float minDist = float.MaxValue;
+            var nearLinkList = nearTile.GetLinkListToNextTile();
+            var farLinkList = farTile.GetLinkListToNextTile();
+
+            nearLinkList.ForEach(t => t.DisableLink());
+            farLinkList.ForEach(t => t.DisableLink());
+
+            for (int i = 0; i < nearLinkList.Count; i++)
+            {
+                Vector3 nearLinkEndPos = nearLinkList[i].linkEndPos;
+                for (int j = 0; j < farLinkList.Count; j++)
+                {
+                    Vector3 farLinkStartPos = farLinkList[j].linkStartPos;
+                    bool hasPath = NavMesh.CalculatePath(nearLinkEndPos, farLinkStartPos, areaMaskDetail, _navmeshPath);
+                    if(hasPath && _navmeshPath.status == NavMeshPathStatus.PathComplete)
+                    {
+                        float dist = Vector3.SqrMagnitude(farLinkStartPos - nearLinkEndPos);
+                        if (dist < minDist)
+                        {
+                            Debug.DrawLine(nearLinkEndPos, farLinkStartPos, Color.red, 5.0f);
+                            targetPos = nearLinkEndPos;
+                            minDist = dist;
+                        }
+                    }
+                }
+            }
+
+            nearLinkList.ForEach(t => t.EnableLink());
+            farLinkList.ForEach(t => t.EnableLink());
+            //Debug.LogError("没有路径");
+            return targetPos;
         }
 
         // ----------------根据寻路信息移动Agent---------------------

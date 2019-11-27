@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
+#if UNITY_EDITOR
 using UnityEditor;
+
+#endif
 
 //public class BoundVolume
 //{
@@ -87,7 +90,9 @@ public class AABBBoundBox /*: BoundVolume*/
 
     public void DebugDraw(Color color)
     {
+#if UNITY_EDITOR
         Handles.color = color;
         Handles.DrawWireCube(center,size);
+#endif
     }
 }

@@ -32,7 +32,7 @@ namespace RuntimePathfinding
         private NavMeshSurface _surface;
         //private List<NavmeshTileLink> _previousTileLinkList; // 假设当前区块为B，该Link指A-B
         private List<NavmeshTileLink> _nextTileLinkList = new List<NavmeshTileLink>(16); // 该Link指B-C
-
+        private NavmeshTile nextTile;
         private TileIdentifier _tileIdentifier;
         private float _tileSize;
         private Vector3 _tileCenterPos;
@@ -51,12 +51,13 @@ namespace RuntimePathfinding
             _surface.collectObjects = CollectObjects.Volume;
             _surface.defaultArea = RuntimePathfinding.areaDetail;
             _surface.center = Vector3.zero;
-            _surface.size = new Vector3(_tileSize+0.5f, _tileSize * 2.0f, _tileSize+0.5f);
+            _surface.size = new Vector3(_tileSize+0.5f, _tileSize * 8.0f, _tileSize+0.5f);
         }
 
         public void BakeNavmeshTile(TileIdentifier tileIdentifier)
         {
             _tileIdentifier = tileIdentifier;
+            //Debug.Log("Create Tile " +this);
             SetTilePosition();
             _surface.BuildNavMesh();
         }
@@ -89,6 +90,7 @@ namespace RuntimePathfinding
         public virtual void ReturnToPool()
         {
             base.ReturnToPool();
+            //Debug.Log($"Recycle {this} Link Count {_nextTileLinkList.Count}");
             // 将Link回收至池子里
             for (int i = 0; i < _nextTileLinkList.Count; i++)
             {

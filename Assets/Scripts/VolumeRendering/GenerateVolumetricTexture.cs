@@ -1,6 +1,10 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
 
+#endif
+
+#if UNITY_EDITOR
 public class GenerateVolumeTexture : EditorWindow
 {
     Transform Cage;
@@ -51,3 +55,4 @@ public class GenerateVolumeTexture : EditorWindow
         SaveFloatArrayToFile(voxels, Application.dataPath + "/Resources/" + filename);
     }
 }
+#endif

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -60,6 +62,7 @@ public class SDFBaker : MonoBehaviour
 
     private void CaculateEDT()
     {
+#if UNITY_EDITOR
         for (int i = 0;i < textureSize; i++)
         {
             for (int j = 0; j < textureSize; j++)
@@ -75,6 +78,7 @@ public class SDFBaker : MonoBehaviour
             }
             EditorUtility.DisplayProgressBar("Bake sdf","Baking....",i/(float)textureSize);
         }
+#endif
     }
 
     private float NearestDistance(int gx,int gz)
@@ -105,6 +109,7 @@ public class SDFBaker : MonoBehaviour
 
     public void Save()
     {
+#if UNITY_EDITOR
         Texture2D texture = new Texture2D(textureSize,textureSize, TextureFormat.ARGB32, false);
         for (int i = 0; i < textureSize; i++)
         {
@@ -118,13 +123,15 @@ public class SDFBaker : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         File.WriteAllBytes(Application.dataPath + $"/SDF_{Random.Range(1, 9999)}.png", bytes);
         Debug.Log("Saved! " + bytes.Length);
-        UnityEditor.AssetDatabase.Refresh();
+        AssetDatabase.Refresh();
         EditorUtility.ClearProgressBar();
+#endif
     }
 
     private Texture2D sdfTexture;
     private void OnDrawGizmosSelected()
     {
+#if UNITY_EDITOR
         return;
         if (sdfTexture == null)
         {
@@ -136,8 +143,9 @@ public class SDFBaker : MonoBehaviour
             for (int z = 0; z < 100; z++)
             {
                 float distance = sdfTexture.GetPixel(x, z).r;
-                UnityEditor.Handles.Label(new Vector3(x*unitLength,0f,z*unitLength),distance.ToString("0.0"));
+                Handles.Label(new Vector3(x*unitLength,0f,z*unitLength),distance.ToString("0.0"));
             }
         }
+#endif
     }
 }

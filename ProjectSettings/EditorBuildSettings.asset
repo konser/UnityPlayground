@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Tutorial/JPS/JPSTest.unity
-    guid: 27b740f9286488e4cb1e622282bba5d8
+    path: Assets/Tutorial/Pathfinding/Pathfinding.unity
+    guid: 9dd6c0716d0dd6e4387c6f9c19a45afe
   m_configObjects: {}

@@ -37,6 +37,7 @@ public class SampleTexture : MonoBehaviour
     
     private void OnDrawGizmos()
     {
+#if UNITY_EDITOR
         if (buffer != null && Application.isPlaying)
         {
             for (int k = kstart; k < kstart+ size; k++)
@@ -55,5 +56,6 @@ public class SampleTexture : MonoBehaviour
                 }
             }
         }
+#endif
     }
 }

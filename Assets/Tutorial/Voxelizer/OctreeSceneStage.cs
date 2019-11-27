@@ -63,6 +63,7 @@ public class OctreeSceneStage
             count++;
         }
 
+        Debug.Log(count);
         _octree.UpdateTree();
         return _octree;
     }

@@ -1,6 +1,9 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 
+#if UNITY_EDITOR
 public class RenderCubemapWizard : ScriptableWizard
 {
     public BoxCollider collider;
@@ -46,3 +49,4 @@ public class RenderCubemapWizard : ScriptableWizard
             "Render cubemap", "Render!");
     }
 }
+#endif

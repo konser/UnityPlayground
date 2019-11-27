@@ -1,7 +1,9 @@
 ﻿using RVO;
 using System;
 using System.Collections.Generic;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using Vector2 = RVO.Vector2;
 
@@ -109,6 +111,7 @@ public class RVOTest : MonoBehaviour
 
     private void Draw()
     {
+#if UNITY_EDITOR
         if (inited == false || Application.isPlaying == false)
         {
             return;
@@ -118,6 +121,7 @@ public class RVOTest : MonoBehaviour
         {
             Handles.DrawPolyLine(ToVec3GizmoArray(obstacles[i]));
         }
+#endif
     }
 
     void OnDrawGizmos()
