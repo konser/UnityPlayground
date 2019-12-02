@@ -34,7 +34,7 @@ namespace RuntimePathfinding
                 _navmeshLink = gameObject.AddComponent<NavMeshLink>();
             }
             _navmeshLink.area = RuntimePathfinding.areaDetail;
-            _navmeshLink.bidirectional = false;
+            _navmeshLink.bidirectional = true;
             _navmeshLink.autoUpdate = true;
         }
 

@@ -12,12 +12,12 @@ GameObject:
   - component: {fileID: 2146578832277647172}
   - component: {fileID: 2146578832277647173}
   - component: {fileID: 2146578832277647290}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: SimpleFloor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &2146578832277647175
 Transform:
@@ -1422,29 +1422,29 @@ MonoBehaviour:
   - {x: -23.199951, y: -0.16600037, z: 9.800293}
   - {x: -23.199951, y: -0.16600037, z: 10.800293}
   - {x: -23.185547, y: -1.0000534, z: 15.563965}
-  - {x: 0.0073242188, y: -1.0000534, z: 15.563965}
+  - {x: 0.0546875, y: -1.0000534, z: 15.563965}
   - {x: -23.185547, y: -0.00005340576, z: 15.563965}
-  - {x: 0.0073242188, y: -0.00005340576, z: 15.563965}
-  - {x: 0.0073242188, y: -1.0000534, z: 15.563965}
-  - {x: 0.0073242188, y: -1.0000534, z: -4}
-  - {x: 0.0073242188, y: -0.00005340576, z: 15.563965}
-  - {x: 0.0073242188, y: -0.00005340576, z: -4}
-  - {x: 0.0073242188, y: -1.0000534, z: -4}
+  - {x: 0.0546875, y: -0.00005340576, z: 15.563965}
+  - {x: 0.0546875, y: -1.0000534, z: 15.563965}
+  - {x: 0.0546875, y: -1.0000534, z: -4}
+  - {x: 0.0546875, y: -0.00005340576, z: 15.563965}
+  - {x: 0.0546875, y: -0.00005340576, z: -4}
+  - {x: 0.0546875, y: -1.0000534, z: -4}
   - {x: -23.185547, y: -1.0000534, z: -4}
-  - {x: 0.0073242188, y: -0.00005340576, z: -4}
+  - {x: 0.0546875, y: -0.00005340576, z: -4}
   - {x: -23.185547, y: -0.00005340576, z: -4}
   - {x: -23.185547, y: -1.0000534, z: -4}
   - {x: -23.185547, y: -1.0000534, z: 15.563965}
   - {x: -23.185547, y: -0.00005340576, z: -4}
   - {x: -23.185547, y: -0.00005340576, z: 15.563965}
   - {x: -23.185547, y: -0.00005340576, z: 15.563965}
-  - {x: 0.0073242188, y: -0.00005340576, z: 15.563965}
+  - {x: 0.0546875, y: -0.00005340576, z: 15.563965}
   - {x: -23.185547, y: -0.00005340576, z: -4}
-  - {x: 0.0073242188, y: -0.00005340576, z: -4}
+  - {x: 0.0546875, y: -0.00005340576, z: -4}
   - {x: -23.185547, y: -1.0000534, z: -4}
-  - {x: 0.0073242188, y: -1.0000534, z: -4}
+  - {x: 0.0546875, y: -1.0000534, z: -4}
   - {x: -23.185547, y: -1.0000534, z: 15.563965}
-  - {x: 0.0073242188, y: -1.0000534, z: 15.563965}
+  - {x: 0.0546875, y: -1.0000534, z: 15.563965}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: -1}
   - {x: 0, y: 3, z: 0}
@@ -1671,29 +1671,29 @@ MonoBehaviour:
   - {x: 0, y: 0}
   - {x: -1, y: 0}
   - {x: 11.893799, y: 0}
-  - {x: -11.299072, y: 0}
+  - {x: -11.346436, y: 0}
   - {x: 11.893799, y: 1}
-  - {x: -11.299072, y: 1}
+  - {x: -11.346436, y: 1}
   - {x: 0, y: 0}
   - {x: -19.563965, y: 0}
   - {x: 0, y: 1}
   - {x: -19.563965, y: 1}
-  - {x: 11.299072, y: 0}
+  - {x: 11.346436, y: 0}
   - {x: -11.893799, y: 0}
-  - {x: 11.299072, y: 1}
+  - {x: 11.346436, y: 1}
   - {x: -11.893799, y: 1}
   - {x: 19.563965, y: 0}
   - {x: 0, y: 0}
   - {x: 19.563965, y: 1}
   - {x: 0, y: 1}
   - {x: -11.893799, y: 0}
-  - {x: 11.299072, y: 0}
+  - {x: 11.346436, y: 0}
   - {x: -11.893799, y: -19.563965}
-  - {x: 11.299072, y: -19.563965}
+  - {x: 11.346436, y: -19.563965}
   - {x: 11.893799, y: -19.563965}
-  - {x: -11.299072, y: -19.563965}
+  - {x: -11.346436, y: -19.563965}
   - {x: 11.893799, y: 0}
-  - {x: -11.299072, y: 0}
+  - {x: -11.346436, y: 0}
   - {x: 0, y: 0}
   - {x: -1, y: 0}
   - {x: 0, y: 3}
@@ -2006,9 +2006,17 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_IsSelectable: 1
-  m_SelectedFaces: 
-  m_SelectedEdges: []
-  m_SelectedVertices: 
+  m_SelectedFaces: 2c000000
+  m_SelectedEdges:
+  - a: 176
+    b: 177
+  - a: 178
+    b: 176
+  - a: 177
+    b: 179
+  - a: 179
+    b: 178
+  m_SelectedVertices: b0000000b1000000b2000000b3000000
 --- !u!1001 &227925950525060453
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2016,11 +2024,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2146578832277647175}
     m_Modifications:
-    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
-        type: 3}
-      propertyPath: m_Name
-      value: Slope
-      objectReference: {fileID: 0}
     - target: {fileID: 8976914835591528549, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2076,15 +2079,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8976914835591528548, guid: 79e492d64cbd03f43886bae1148c7604,
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
-      propertyPath: m_Mesh
-      value: 
+      propertyPath: m_Name
+      value: Slope
       objectReference: {fileID: 0}
-    - target: {fileID: 8976914835591528857, guid: 79e492d64cbd03f43886bae1148c7604,
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
-      propertyPath: m_Mesh
-      value: 
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
+        type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 79e492d64cbd03f43886bae1148c7604, type: 3}
@@ -2101,11 +2109,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2146578832277647175}
     m_Modifications:
-    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
-        type: 3}
-      propertyPath: m_Name
-      value: Slope (1)
-      objectReference: {fileID: 0}
     - target: {fileID: 8976914835591528549, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2161,15 +2164,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8976914835591528548, guid: 79e492d64cbd03f43886bae1148c7604,
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
-      propertyPath: m_Mesh
-      value: 
+      propertyPath: m_Name
+      value: Slope (1)
       objectReference: {fileID: 0}
-    - target: {fileID: 8976914835591528857, guid: 79e492d64cbd03f43886bae1148c7604,
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
         type: 3}
-      propertyPath: m_Mesh
-      value: 
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8976914835591528856, guid: 79e492d64cbd03f43886bae1148c7604,
+        type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 79e492d64cbd03f43886bae1148c7604, type: 3}

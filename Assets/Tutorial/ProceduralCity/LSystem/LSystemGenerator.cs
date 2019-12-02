@@ -28,7 +28,6 @@
         {
             public int x, y;
             public bool isStreet;
-
             public Node(int x, int y)
             {
                 this.x = x;
@@ -107,7 +106,6 @@
                         float newX = state.x + state.size * Mathf.Cos(state.dir * Mathf.PI / 180);
                         float newY = state.y + state.size * Mathf.Sin(state.dir * Mathf.PI / 180);
 
-                        Debug.Log(state.x + " -" + state.y);
                         nodes[Mathf.RoundToInt(state.x), Mathf.RoundToInt(state.y)].isStreet = true;
                         nodes[Mathf.RoundToInt(newX), Mathf.RoundToInt(newY)].isStreet = true;
 

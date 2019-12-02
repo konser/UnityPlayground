@@ -56,7 +56,6 @@ namespace RuntimePathfinding
                 isDone = true;
 #if UNITY_EDITOR
                 _stopwatch.Stop();
-                Debug.Log("Coroutine total running time : " + _runningTime);
 #endif
             }
             return next;

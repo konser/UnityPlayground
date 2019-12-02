@@ -107,12 +107,12 @@ namespace RuntimePathfinding
         {
             Initialize();
             yield return new WaitForSeconds(5);
-            RequestPathfinding(new PathfindingRequest
-            {
-                agent = testAgent,
-                destination = destination.position,
-                start = testAgent.transform.position
-            });
+            //RequestPathfinding(new PathfindingRequest
+            //{
+            //    agent = testAgent,
+            //    destination = destination.position,
+            //    start = testAgent.transform.position
+            //});
         }
 
         public void Initialize()
@@ -269,7 +269,6 @@ namespace RuntimePathfinding
                     break;
                 }
             }
-            Debug.Log(count);
         }
 
         // --------------标记粗略路径经过的区块------------
@@ -433,7 +432,7 @@ namespace RuntimePathfinding
             if (activeTiles == null && currentSeqIndex == 0)
             {
                 activeTiles = new NavmeshTile[3];
-                for (int i = 0; i < activeTiles.Length; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     if (i < passedTileList.Count)
                     {

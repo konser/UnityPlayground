@@ -17,6 +17,7 @@ namespace RuntimePathfinding
         private Vector3 _bakeAreaCenter;
         private NavMeshPath _navmeshPath;
         private NavmeshTile _temp = null; // 用来交换两个tile先后顺序
+        private int _rayCastLayerMask;
         public void Init(PathfindingSetting setting)
         {
             _surface = gameObject.GetComponent<NavMeshSurface>();
@@ -24,7 +25,7 @@ namespace RuntimePathfinding
             {
                 _surface = gameObject.AddComponent<NavMeshSurface>();
             }
-            _surface.size = new Vector3(setting.tileSize*0.98f, setting.tileSize * 8.0f, setting.bakeLinkAreaWidth);
+            _surface.size = new Vector3(setting.tileSize * 0.98f, setting.tileSize * 8.0f, setting.bakeLinkAreaWidth);
             _surface.center = Vector3.zero;
             _surface.collectObjects = CollectObjects.Volume;
             _surface.defaultArea = RuntimePathfinding.areaBakeLink;
@@ -104,20 +105,21 @@ namespace RuntimePathfinding
         private void GenerateTileLink(ObjectPool linkPool, ref NavmeshTile tileFrom, ref NavmeshTile tileTo)
         {
             int linkCount = 0;
+            //float sampleRadius = _offset;
+            //for (int j = 0; j < 10; j++)
+            //{
+            //    float heightOffset = j * sampleRadius;
             for (int i = 0; i < _sampleCount; i++)
             {
-                bool hasNavmeshAtStartPos = NavMesh.SamplePosition(_samplePosArrayOne[i], out NavMeshHit hitResultOne,0.5f, RuntimePathfinding.areaMaskBakeLink);
-                bool hasNavmeshAtEndPos = NavMesh.SamplePosition(_samplePosArrayTwo[i], out NavMeshHit hitResultTwo, 0.5f, RuntimePathfinding.areaMaskBakeLink);
-               // Debug.DrawLine(_samplePosArrayOne[i],_samplePosArrayTwo[i],Color.red,5.0f);
+                bool hasNavmeshAtStartPos = NavMesh.SamplePosition(_samplePosArrayOne[i], out NavMeshHit hitResultOne, _offset, RuntimePathfinding.areaMaskBakeLink);
+                bool hasNavmeshAtEndPos = NavMesh.SamplePosition(_samplePosArrayTwo[i], out NavMeshHit hitResultTwo, _offset, RuntimePathfinding.areaMaskBakeLink);
                 if (hasNavmeshAtStartPos && hasNavmeshAtEndPos)
                 {
                     bool hasPath = NavMesh.CalculatePath(hitResultOne.position, hitResultTwo.position, RuntimePathfinding.areaMaskBakeLink, _navmeshPath);
-                    if (true)
+                    if (hasPath)
                     {
                         NavmeshTileLink link = linkPool.GetObject<NavmeshTileLink>();
                         link.Init();
-
-                        //tileFrom--Link-- > tileTo
                         if (tileFrom.ContainsPosition2D(hitResultOne.position))
                         {
                             link.SetLinkPoint(hitResultOne.position, hitResultTwo.position);
@@ -126,18 +128,16 @@ namespace RuntimePathfinding
                         {
                             link.SetLinkPoint(hitResultTwo.position, hitResultOne.position);
                         }
-
                         tileFrom.AddNextNavmeshLink(link);
-                        //Debug.Log($"Create link for {tileFrom} -> {tileTo}");
-                        //link.gameObject.name = $"Link {tileFrom}--->{tileTo}";
                         linkCount++;
                     }
                 }
             }
+            //}
 
             if (linkCount == 0)
             {
-                Debug.LogError("No link generate -> " + tileFrom +" " + tileTo);
+                Debug.LogError("No link generate -> " + tileFrom + " " + tileTo);
             }
         }
 
