@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
-
 #if UNITY_EDITOR
 #endif
 namespace ComputationalGeometry
@@ -22,6 +21,7 @@ namespace ComputationalGeometry
                 get { return pos; }
             }
         }
+
         public float randomRadius = 10f;
         public int randomCount = 30;
         List<TestPoint> randomPoints = new List<TestPoint>(300);

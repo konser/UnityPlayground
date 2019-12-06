@@ -150,8 +150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e320dbcd5c684600bd3b2f9cf12550e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  randomRadius: 50
-  randomCount: 30
+  randomRadius: 1
+  randomCount: 300
 --- !u!4 &929218742
 Transform:
   m_ObjectHideFlags: 0

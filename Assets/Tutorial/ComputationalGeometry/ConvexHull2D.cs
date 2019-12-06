@@ -12,6 +12,7 @@ namespace ComputationalGeometry
     {
         static List<T> _upperHullCacheList;
         static List<T> _lowHullCacheList;
+
         public static bool GetConvexHull2D(List<T> pointList,List<T> result)
         {
             result.Clear();
@@ -38,8 +39,16 @@ namespace ComputationalGeometry
             _upperHullCacheList.Clear();
             _lowHullCacheList.Clear();
 
-            // 按x轴从小到大排序
-            pointList.Sort((a, b) => a.position.x.CompareTo(b.position.x));
+            // 按x轴从小到大排序 x轴相同则比较z轴
+            pointList.Sort((a, b) =>
+            {
+                int xCompare = a.position.x.CompareTo(b.position.x);
+                if (xCompare != 0)
+                {
+                    return xCompare;
+                }
+                return a.position.z.CompareTo(b.position.z);
+            });
             // 上半边
             _upperHullCacheList.Add(pointList[0]);
             _upperHullCacheList.Add(pointList[1]);
