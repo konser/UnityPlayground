@@ -68,13 +68,13 @@ public class InputManager : MonoBehaviour
 
     #region 输入事件
     // Action类型输入事件
-    private Dictionary<EVirtualKeyType,Action<InputData>> actionInputEventDic 
-        = new Dictionary<EVirtualKeyType, Action<InputData>>();
+    private Dictionary<EVirtualKeyType,Action<InputInfo>> actionInputEventDic 
+        = new Dictionary<EVirtualKeyType, Action<InputInfo>>();
     // State类型输入事件
-    private Dictionary<EVirtualKeyType, Action<InputData>> stateInputEventDic
-        = new Dictionary<EVirtualKeyType, Action<InputData>>();
+    private Dictionary<EVirtualKeyType, Action<InputInfo>> stateInputEventDic
+        = new Dictionary<EVirtualKeyType, Action<InputInfo>>();
 
-    public void Register(EInputType inputType,EVirtualKeyType keyType,  Action<InputData> callback)
+    public void Register(EInputType inputType,EVirtualKeyType keyType,  Action<InputInfo> callback)
     {
         switch (inputType)
         {
@@ -101,7 +101,7 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    public void UnRegister(EInputType inputType,EVirtualKeyType keyType, Action<InputData> callback)
+    public void UnRegister(EInputType inputType,EVirtualKeyType keyType, Action<InputInfo> callback)
     {
         switch (inputType)
         {
@@ -127,7 +127,7 @@ public class InputManager : MonoBehaviour
     private Dictionary<KeyCode,float> _holdedKeyThisFrame = new Dictionary<KeyCode, float>();
     private Dictionary<KeyCode,float> _firedKeyThisFrame = new Dictionary<KeyCode, float>();
     private List<KeyCode> _keyCache = new List<KeyCode>();
-    private List<InputData> _thisFrameMappedInputList = new List<InputData>();
+    private List<InputInfo> _thisFrameMappedInputList = new List<InputInfo>();
     /// <summary>
     /// 当前逻辑按键的禁用状态，如果禁用（false) 则不在AfterReceiveInput阶段触发按键回调
     /// todo 因为StateMachineBehaviour的Editor面板不显示枚举，只能用字符串进行配置 这里用字符串来比较
@@ -199,29 +199,29 @@ public class InputManager : MonoBehaviour
         _thisFrameMappedInputList = _inputMapper.GetMappedInputInThisFrame();
         for (int i = 0; i < _thisFrameMappedInputList.Count; i++)
         {
-            InputData data = _thisFrameMappedInputList[i];
-            if (!IsKeyAccessable(data.virtualKey))
+            InputInfo tInfo = _thisFrameMappedInputList[i];
+            if (!IsKeyAccessable(tInfo.virtualKey))
             {
-                Debug.Log($"{data.virtualKey} 当前被禁用！");
+                Debug.Log($"{tInfo.virtualKey} 当前被禁用！");
                 continue;
             }
-            switch (data.inputType)
+            switch (tInfo.inputType)
             {
                 case EInputType.Action:
-                    if (actionInputEventDic.ContainsKey(data.virtualKey))
+                    if (actionInputEventDic.ContainsKey(tInfo.virtualKey))
                     {
-                        actionInputEventDic[data.virtualKey]?.Invoke(data);
+                        actionInputEventDic[tInfo.virtualKey]?.Invoke(tInfo);
                     }
                     break;
                 case EInputType.State:
-                    if (stateInputEventDic.ContainsKey(data.virtualKey))
+                    if (stateInputEventDic.ContainsKey(tInfo.virtualKey))
                     {
-                        stateInputEventDic[data.virtualKey]?.Invoke(data);
+                        stateInputEventDic[tInfo.virtualKey]?.Invoke(tInfo);
                     }
                     break;
             }
             //--For debug
-            if (showDebugInfo) Debug.Log(data.ToString());
+            if (showDebugInfo) Debug.Log(tInfo.ToString());
         }
     }
 

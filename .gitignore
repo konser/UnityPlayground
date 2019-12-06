@@ -51,3 +51,6 @@ Assets/ThirdParty.meta
 Assets/ThirdParty/
 .cubemap,.png
 Assets/Resources/
+Assets/Gizmos/Doozy/
+Assets/Gizmos/Doozy.meta
+Assets/Tutorial/Pathfinding/MapRepresentation/RecastGraph/NavMesh-*

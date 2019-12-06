@@ -49,7 +49,7 @@ public enum EInputContextType
     Prioirty,
     NormalHumanPlayer
 }
-public struct InputData
+public struct InputInfo
 {
     public EInputType inputType;
     public EVirtualKeyType virtualKey;

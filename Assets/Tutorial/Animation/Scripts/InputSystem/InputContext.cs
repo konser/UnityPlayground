@@ -13,13 +13,13 @@ public class InputContext
     #endregion
 
     #region 运行时
-    private List<InputData> _currentFrameInputList;
+    private List<InputInfo> _currentFrameInputList;
     public HashSet<KeyCode> keycodeSetToCheck;
     #endregion
 
     public InputContext(InputContextConfig config)
     {
-        _currentFrameInputList = new List<InputData>();
+        _currentFrameInputList = new List<InputInfo>();
         keycodeSetToCheck = new HashSet<KeyCode>();
         _actionInputMappingDic = new Dictionary<KeyCode, InputMapRule>();
         _stateInputMappingDic = new Dictionary<KeyCode, InputMapRule>();
@@ -58,7 +58,7 @@ public class InputContext
     {
         if (_actionInputMappingDic.ContainsKey(keycode))
         {
-            _currentFrameInputList.Add(new InputData
+            _currentFrameInputList.Add(new InputInfo
             {
                 inputType = EInputType.Action,
                 virtualKey = _actionInputMappingDic[keycode].virtualKeyType,
@@ -80,7 +80,7 @@ public class InputContext
             {
                 return false;
             }
-            _currentFrameInputList.Add(new InputData
+            _currentFrameInputList.Add(new InputInfo
             {
                 inputType = EInputType.State,
                 virtualKey = rule.virtualKeyType,
@@ -99,7 +99,7 @@ public class InputContext
         //todo
     }
 
-    public List<InputData> GetCurrentFrameMappedInput()
+    public List<InputInfo> GetCurrentFrameMappedInput()
     {
         return _currentFrameInputList;
     }

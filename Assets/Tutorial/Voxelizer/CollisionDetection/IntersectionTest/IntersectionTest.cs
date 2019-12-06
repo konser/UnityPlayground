@@ -62,6 +62,8 @@ public static class IntersectionTest
         return true;
     }
 
+
+
     public static TriangleInfo[] GetTriangles(MeshFilter filter)
     {
         Mesh mesh = filter.sharedMesh;

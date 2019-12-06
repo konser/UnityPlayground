@@ -6,15 +6,15 @@ using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-public class Node
+public class JPSNode
 {
     public int x;
     public int z;
     public float realCost; // g cost, fcost 与hcost不存储 运行中算出来
-    public Node previous;
+    public JPSNode previous;
     public GameObject block;
     public readonly bool isObstacle;
-    public Node(int x, int z, float realCost, bool obstacle)
+    public JPSNode(int x, int z, float realCost, bool obstacle)
     {
         this.x = x;
         this.z = z;
@@ -48,7 +48,7 @@ public class PathfindingScene : MonoBehaviour
     private GameObject blockPrefab;
     private MaterialPropertyBlock props;
     private int size;
-    private Node[,] nodeMap;
+    private JPSNode[,] nodeMap;
     private WaitForSeconds waitTime;
     private Func<int, int, int, int, float> Heuristic;
 
@@ -69,7 +69,7 @@ public class PathfindingScene : MonoBehaviour
         GameObject p = new GameObject("Pathfinding Scene");
         isObstacle = new bool[texture.width, texture.height];
         size = texture.width;
-        nodeMap = new Node[size, size];
+        nodeMap = new JPSNode[size, size];
         Color c;
         for (int i = 0; i < texture.width; i++)
         {
@@ -87,7 +87,7 @@ public class PathfindingScene : MonoBehaviour
                     isObstacle[i, j] = false;
                     c = Color.white;
                 }
-                nodeMap[i, j] = new Node(i, j, Single.PositiveInfinity, isObstacle[i, j]);
+                nodeMap[i, j] = new JPSNode(i, j, Single.PositiveInfinity, isObstacle[i, j]);
                 GameObject go = Instantiate(blockPrefab, p.transform);
                 go.transform.position = new Vector3(i, 0, j);
                 SetBlockColor(go, c);
@@ -105,7 +105,7 @@ public class PathfindingScene : MonoBehaviour
     private void Reset()
     {
         _pathForDisplay.Clear();
-        foreach (Node node in nodeMap)
+        foreach (JPSNode node in nodeMap)
         {
             node.realCost = Single.PositiveInfinity;
             if (isObstacle[node.x, node.z])
@@ -119,12 +119,12 @@ public class PathfindingScene : MonoBehaviour
         }
     }
 
-    private float GetDistance(Node a, Node b)
+    private float GetDistance(JPSNode a, JPSNode b)
     {
         return EulerDistance(a.x, a.z, b.x, b.z);
     }
 
-    private bool IsWalkable(Node node)
+    private bool IsWalkable(JPSNode node)
     {
         if (node == null)
         {
@@ -141,7 +141,7 @@ public class PathfindingScene : MonoBehaviour
         return true;
     }
 
-    private Node GetNode(int x, int z)
+    private JPSNode GetNode(int x, int z)
     {
         if (InRange(x, z) == false)
         {
@@ -168,9 +168,9 @@ public class PathfindingScene : MonoBehaviour
         return adjust_1 * (dx + dy) + (adjust_2 - 2 * adjust_1) * Mathf.Min(dx, dy);
     }
 
-    private List<Node> ConstructPath(Node n)
+    private List<JPSNode> ConstructPath(JPSNode n)
     {
-        List<Node> nodeList = new List<Node>();
+        List<JPSNode> nodeList = new List<JPSNode>();
         nodeList.Add(n);
         while (n.previous != null)
         {
@@ -179,11 +179,11 @@ public class PathfindingScene : MonoBehaviour
         }
         return nodeList;
     }
-    private Node[] GetAllNeibours(Node n)
+    private JPSNode[] GetAllNeibours(JPSNode n)
     {
         int x = n.x;
         int z = n.z;
-        Node[] neibours = new Node[8];
+        JPSNode[] neibours = new JPSNode[8];
 
         if (InRange(x - 1, z)) neibours[0] = nodeMap[x - 1, z];
         if (InRange(x, z + 1)) neibours[1] = nodeMap[x, z + 1];
@@ -202,7 +202,7 @@ public class PathfindingScene : MonoBehaviour
         return x >= 0 && z >= 0 && x < size && z < size;
     }
 
-    private bool InRange(Node node)
+    private bool InRange(JPSNode node)
     {
         return node.x >= 0 && node.z >= 0 && node.x < size && node.z < size;
     }
@@ -246,10 +246,10 @@ public class PathfindingScene : MonoBehaviour
 
         // 寻路流程
         Stopwatch watch = Stopwatch.StartNew();
-        HashSet<Node> reachedList = new HashSet<Node>();
-        HashSet<Node> exploredList = new HashSet<Node>();
-        PriorityQueue<Node, float> pq = new PriorityQueue<Node, float>(0f);
-        Node[] neibours = new Node[8];
+        HashSet<JPSNode> reachedList = new HashSet<JPSNode>();
+        HashSet<JPSNode> exploredList = new HashSet<JPSNode>();
+        PriorityQueue<JPSNode, float> pq = new PriorityQueue<JPSNode, float>(0f);
+        JPSNode[] neibours = new JPSNode[8];
 
         nodeMap[xstart, zstart].realCost = 0f;
         pq.Insert(nodeMap[xstart, zstart], 0f);
@@ -257,7 +257,7 @@ public class PathfindingScene : MonoBehaviour
 
         while (pq.Count() != 0)
         {
-            Node currNode = pq.Pop();
+            JPSNode currNode = pq.Pop();
             if (currNode.x == xend && currNode.z == zend)
             {
                 watch.Stop();
@@ -316,7 +316,7 @@ public class PathfindingScene : MonoBehaviour
         StartCoroutine(FindPathJPS(nodeMap[startPos.x, startPos.y], nodeMap[endPos.x, endPos.y]));
     }
 
-    public IEnumerator FindPathJPS(Node startNode, Node goalNode)
+    public IEnumerator FindPathJPS(JPSNode startNode, JPSNode goalNode)
     {
         if (!InRange(startNode) || !InRange(goalNode))
         {
@@ -344,16 +344,16 @@ public class PathfindingScene : MonoBehaviour
         }
         Stopwatch watch = Stopwatch.StartNew();
         // --JPS Path Finding
-        PriorityQueue<Node, float> priorityQueue = new PriorityQueue<Node, float>(0f);
-        HashSet<Node> openSet = new HashSet<Node>();
-        HashSet<Node> explored = new HashSet<Node>();
+        PriorityQueue<JPSNode, float> priorityQueue = new PriorityQueue<JPSNode, float>(0f);
+        HashSet<JPSNode> openSet = new HashSet<JPSNode>();
+        HashSet<JPSNode> explored = new HashSet<JPSNode>();
         openSet.Add(startNode);
         startNode.realCost = 0f;
         startNode.previous = null;
         priorityQueue.Insert(startNode, 0f);
         while (priorityQueue.Count() != 0)
         {
-            Node currNode = priorityQueue.Pop();
+            JPSNode currNode = priorityQueue.Pop();
             if (currNode.x == goalNode.x && currNode.z == goalNode.z)
             {
                 watch.Stop();
@@ -373,9 +373,9 @@ public class PathfindingScene : MonoBehaviour
         Debug.LogError("JPS 没找到路径");
     }
 
-    private void IdentitySuccessors(Node currNode, Node goalNode, HashSet<Node> openSet, HashSet<Node> explored, PriorityQueue<Node, float> priorityQueue)
+    private void IdentitySuccessors(JPSNode currNode, JPSNode goalNode, HashSet<JPSNode> openSet, HashSet<JPSNode> explored, PriorityQueue<JPSNode, float> priorityQueue)
     {
-        Node[] neibours = GetNeibours_JPS(currNode);
+        JPSNode[] neibours = GetNeibours_JPS(currNode);
         for (int i = 0; i < neibours.Length; i++)
         {
             if (neibours[i] == null)
@@ -387,7 +387,7 @@ public class PathfindingScene : MonoBehaviour
                 Debug.Log("Skip neibour explored.");
                 continue;
             }
-            Node jumpNode = Jump(currNode, neibours[i], goalNode);
+            JPSNode jumpNode = Jump(currNode, neibours[i], goalNode);
             if (jumpNode == null)
             {
                 continue;
@@ -405,14 +405,14 @@ public class PathfindingScene : MonoBehaviour
         }
     }
 
-    private Node[] GetNeibours_JPS(Node node)
+    private JPSNode[] GetNeibours_JPS(JPSNode node)
     {
-        Node[] nodes = new Node[8];
+        JPSNode[] nodes = new JPSNode[8];
         if (node.previous == null)
         {
             return GetAllNeibours(node);
         }
-        Node parentNode = node.previous;
+        JPSNode parentNode = node.previous;
         int x = node.x, z = node.z;
         int px = parentNode.x;
         int pz = parentNode.z;
@@ -491,7 +491,7 @@ public class PathfindingScene : MonoBehaviour
         return nodes;
     }
 
-    private Node Jump(Node parentNode, Node neibour, Node goal)
+    private JPSNode Jump(JPSNode parentNode, JPSNode neibour, JPSNode goal)
     {
         if (neibour == null || !IsWalkable(neibour))
         {
@@ -546,7 +546,7 @@ public class PathfindingScene : MonoBehaviour
     }
     #endregion
 
-    private List<Node> _pathForDisplay = new List<Node>();
+    private List<JPSNode> _pathForDisplay = new List<JPSNode>();
     private void OnDrawGizmosSelected()
     {
 #if UNITY_EDITOR

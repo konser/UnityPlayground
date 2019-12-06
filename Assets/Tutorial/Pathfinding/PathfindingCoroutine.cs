@@ -4,9 +4,6 @@ using Debug = UnityEngine.Debug;
 
 namespace RuntimePathfinding
 {
-    /// <summary>
-    /// 封装寻路协程
-    /// </summary>
     public class PathfindingCoroutine : IEnumerator
     {
         IEnumerator _routine;

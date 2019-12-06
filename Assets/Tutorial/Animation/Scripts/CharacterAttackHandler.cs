@@ -36,7 +36,7 @@ public class CharacterAttackHandler : MonoBehaviour
         };
     }
 
-    private void ListenAttackInput(InputData inputKey)
+    private void ListenAttackInput(InputInfo inputKey)
     {
         currentInput = new ComboInput
         {
@@ -78,11 +78,11 @@ public class CharacterAttackHandler : MonoBehaviour
         _animator.SetInteger("ComboType",(int)comboType);
     }
 
-    private void Equip(InputData inputKey)
+    private void Equip(InputInfo inputKey)
     {
         _animator.CrossFade("Withdrawing Sword", 0.5f);
     }
-    private void Unequip(InputData inputKey)
+    private void Unequip(InputInfo inputKey)
     {
         _animator.CrossFade("Sheathing Sword", 0.5f);
     }

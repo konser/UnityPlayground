@@ -188,10 +188,10 @@ namespace RuntimePathfinding
             List<TileIdentifier> passedTileList = MarkPassedNavmeshTile(ref abstractPath,ref wayPointCount);
             yield return _endOfFrame;
             identifiers = passedTileList;
-            while (!HasReachedDestination(agent,destination))
+            while (!HasReachedDestination(agent, destination))
             {
                 // 检查当前所处区块是否变化
-                CheckAgentCurrentPosition(agent,activeTiles,ref currentSeqIndex);
+                CheckAgentCurrentPosition(agent, activeTiles, ref currentSeqIndex);
 
                 if (lastSeqIndex == currentSeqIndex)
                 {
@@ -209,7 +209,7 @@ namespace RuntimePathfinding
                     GenerateTileLink(ref activeTiles);
                     yield return _endOfFrame;
 
-                    GenerateDetailedPath(agent,activeTiles,destination);
+                    GenerateDetailedPath(agent, activeTiles, destination);
                     yield return _endOfFrame;
                     TryMoveAgent();
                 }
@@ -556,6 +556,9 @@ namespace RuntimePathfinding
         {
             //todo 现在用的是NavmeshAgent 不需要处理
         }
+
+        // --------------------New Method -----------------------------
+        
         #endregion
     }
 }

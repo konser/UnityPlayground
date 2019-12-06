@@ -7,7 +7,7 @@ public class InputMapper
     private List<KeyCode> _consumeReleaseKeyCodeList = new List<KeyCode>();
     public List<InputContext> inputContextList = new List<InputContext>();
     public HashSet<KeyCode> keycodesToCheck = new HashSet<KeyCode>();
-    private List<InputData> _allInputThisFrame = new List<InputData>();
+    private List<InputInfo> _allInputThisFrame = new List<InputInfo>();
     public void AddInputContext(InputContext inputContext)
     {
         if (inputContextList.Contains(inputContext) == false)
@@ -89,7 +89,7 @@ public class InputMapper
         }
     }
 
-    public List<InputData> GetMappedInputInThisFrame()
+    public List<InputInfo> GetMappedInputInThisFrame()
     {
         _allInputThisFrame.Clear();
         for (int i = 0; i < inputContextList.Count; i++)

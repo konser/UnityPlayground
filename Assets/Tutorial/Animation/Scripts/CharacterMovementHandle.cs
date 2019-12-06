@@ -41,7 +41,7 @@ public class CharacterMovementHandle : MonoBehaviour
 
     }
 
-    private void ListenInput(InputData inputKey)
+    private void ListenInput(InputInfo inputKey)
     {
         if (inputKey.inputType == EInputType.State)
         {
