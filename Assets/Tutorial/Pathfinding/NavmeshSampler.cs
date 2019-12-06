@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
+using ComputationalGeometry;
 #if UNITY_EDITOR
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
@@ -71,20 +72,32 @@ namespace RuntimePathfinding
         }
     }
 
-    public class CNode
+    public class CNode : IPoint
     {
         public int x;
         public int y;
         public int z;
         public int regionID = -1;
         public bool hasPoint;
-        public Vector3 position;
+        public Vector3 pos;
         public Bounds bound;
         public bool isConnectedRegion;
         public bool inRegionOne;
         public bool inRegionTwo;
         public bool isLinkPoint;
         public CNode peer;
+
+        public Vector3 position
+        {
+            get { return pos; }
+        }
+    }
+
+    public class ConvexRegion
+    {
+        public int regionIndex;
+        public List<CNode> convexRegionOne;
+        public List<CNode> convexRegionTwo;
     }
 
     public class PathConnectInfo
@@ -161,7 +174,7 @@ namespace RuntimePathfinding
             SampleRandomPoint(points);
             // 分配采样点到各个格子中，构成连通区域
             CreateNavInfo();
-                
+
         }
 
         #region Sample Points
@@ -182,7 +195,7 @@ namespace RuntimePathfinding
             {
                 return;
             }
-            
+
             int[] triangles = mesh.triangles;
             Vector3[] vertices = mesh.vertices;
 
@@ -226,7 +239,7 @@ namespace RuntimePathfinding
                     continue;
                 }
                 float area = triangleList[i].GetTriangleArea();
-                int sampleCount = Mathf.CeilToInt(area/2f);
+                int sampleCount = Mathf.CeilToInt(area / 2f);
                 for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++)
                 {
                     Vector2 randomValue = haltonSeqData.GetNext();
@@ -327,29 +340,29 @@ namespace RuntimePathfinding
         private void CreateNavInfo()
         {
             // create grid with sample point
-            Vector3 size = new Vector3(0.5f,2f,0.5f);
+            Vector3 size = new Vector3(0.5f, 2f, 0.5f);
             int x = Mathf.CeilToInt(bounds.size.x / size.x);
             int y = Mathf.CeilToInt(bounds.size.y / size.y);
             int z = Mathf.CeilToInt(bounds.size.z / size.z);
-            Vector3 localMinPos = transform.InverseTransformPoint(bounds.min)+0.5f*size;
-            grids = new CNode[x,y,z];
+            Vector3 localMinPos = transform.InverseTransformPoint(bounds.min) + 0.5f * size;
+            grids = new CNode[x, y, z];
             for (int i = 0; i < x; i++)
             {
                 for (int j = 0; j < y; j++)
                 {
                     for (int k = 0; k < z; k++)
                     {
-                        CNode n = new CNode(); 
+                        CNode n = new CNode();
                         n.bound = new Bounds(transform.TransformPoint(localMinPos + new Vector3(size.x * i, size.y * j, size.z * k)), size);
                         n.x = i;
                         n.y = j;
                         n.z = k;
-                        grids[i,j,k] = n;
+                        grids[i, j, k] = n;
                     }
                 }
             }
 
-            for (int i = points.Count - 1; i >= 0;i--)
+            for (int i = points.Count - 1; i >= 0; i--)
             {
                 Vector3 localPos = transform.InverseTransformPoint(points[i]) - localMinPos;
                 int idx = (int)(localPos.x / size.x);
@@ -357,7 +370,7 @@ namespace RuntimePathfinding
                 int idz = (int)(localPos.z / size.z);
                 if (!grids[idx, idy, idz].hasPoint)
                 {
-                    grids[idx, idy, idz].position = points[i];
+                    grids[idx, idy, idz].pos = points[i];
                     grids[idx, idy, idz].hasPoint = true;
                 }
                 points.RemoveAt(i);
@@ -367,7 +380,7 @@ namespace RuntimePathfinding
             List<CNode> neibours = new List<CNode>();
             int id = 0;
             Queue<CNode> q = new Queue<CNode>();
-            Dictionary<CNode,List<CNode>> regions = new Dictionary<CNode, List<CNode>>();
+            Dictionary<CNode, List<CNode>> regions = new Dictionary<CNode, List<CNode>>();
             foreach (var node in grids)
             {
                 if (node.regionID == -1 && node.hasPoint == true)
@@ -417,8 +430,8 @@ namespace RuntimePathfinding
                         continue;
                     }
 
-                    Vector3 pos1 = curr.position;
-                    Vector3 pos2 = t.position;
+                    Vector3 pos1 = curr.pos;
+                    Vector3 pos2 = t.pos;
                     NavMesh.CalculatePath(pos1, pos2, connectAreaMask, path);
                     if (path.status == NavMeshPathStatus.PathComplete)
                     {
@@ -430,7 +443,7 @@ namespace RuntimePathfinding
 
                 for (int i = 0; i < regions[curr].Count; i++)
                 {
-                   regions[curr][i].regionID = currentID;
+                    regions[curr][i].regionID = currentID;
                 }
             }
 
@@ -442,11 +455,12 @@ namespace RuntimePathfinding
                 }
             }
 
-            RemoveUnconnectedAreaRegion(regions);
+            FindConnectPort(regions);
         }
 
 
-        private void RemoveUnconnectedAreaRegion(Dictionary<CNode, List<CNode>> regions)
+        private List<ConvexRegion> _convexRegionList = new List<ConvexRegion>();
+        private void FindConnectPort(Dictionary<CNode, List<CNode>> regions)
         {
             List<CNode> connectedRegions = new List<CNode>();
             foreach (KeyValuePair<CNode, List<CNode>> tPair in regions)
@@ -455,13 +469,13 @@ namespace RuntimePathfinding
                 bool connectTwo = false;
                 foreach (CNode node in tPair.Value)
                 {
-                    if (NavMesh.SamplePosition(node.position, out NavMeshHit hit1, 0.15f, areaOneMask))
+                    if (NavMesh.SamplePosition(node.pos, out NavMeshHit hit1, 0.15f, areaOneMask))
                     {
                         connectOne = true;
                         node.inRegionOne = true;
                     }
 
-                    if (NavMesh.SamplePosition(node.position, out NavMeshHit hit2, 0.15f, areaTwoMask))
+                    if (NavMesh.SamplePosition(node.pos, out NavMeshHit hit2, 0.15f, areaTwoMask))
                     {
                         connectTwo = true;
                         node.inRegionTwo = true;
@@ -476,37 +490,48 @@ namespace RuntimePathfinding
             connectInfo = new PathConnectInfo();
             List<CNode> cacheOneList = new List<CNode>();
             List<CNode> cacheTwoList = new List<CNode>();
+            _convexRegionList.Clear();
+
             foreach (KeyValuePair<CNode, List<CNode>> tPair in regions)
             {
                 cacheOneList.Clear();
                 cacheTwoList.Clear();
                 if (connectedRegions.Contains(tPair.Key))
                 {
+                    // 区分出不属于同一Navmesh块的连通区域的点
                     tPair.Key.isConnectedRegion = true;
-                    Vector3 posOne = Vector3.zero;
-                    Vector3 posTwo = Vector3.zero;
                     foreach (CNode tNode in tPair.Value)
                     {
                         tNode.isConnectedRegion = true;
                         if (tNode.inRegionOne)
                         {
                             cacheOneList.Add(tNode);
-                            posOne = tNode.position;
                         }
 
-                        if (tNode.inRegionTwo )
+                        if (tNode.inRegionTwo)
                         {
                             cacheTwoList.Add(tNode);
-                            posTwo = tNode.position;
                         }
                     }
 
+                    ConvexRegion convexRegion = new ConvexRegion()
+                    {
+                        convexRegionOne = new List<CNode>(),
+                        convexRegionTwo = new List<CNode>(),
+                        regionIndex = tPair.Key.regionID
+                    };
+
                     CNode node1 = null;
                     CNode node2 = null;
+                    // 生成凸包
+                    ConvexHull2D<CNode>.GetConvexHull2D(cacheOneList, convexRegion.convexRegionOne);
+                    ConvexHull2D<CNode>.GetConvexHull2D(cacheTwoList, convexRegion.convexRegionTwo);
+
+                    // 从两个凸包上找邻近点作为跨越路线
                     float minDist = Single.PositiveInfinity;
-                    foreach (CNode n1 in cacheOneList)
+                    foreach (CNode n1 in convexRegion.convexRegionOne)
                     {
-                        foreach (CNode n2 in cacheTwoList)
+                        foreach (CNode n2 in convexRegion.convexRegionTwo)
                         {
                             float d = (n1.position - n2.position).sqrMagnitude;
                             if (d < minDist && d > 0.25f)
@@ -517,20 +542,83 @@ namespace RuntimePathfinding
                             }
                         }
                     }
-                    node1.isLinkPoint = true;
-                    node2.isLinkPoint = true;
-                    if (cacheOneList.Count != 0 && cacheTwoList.Count != 0)
+                    
+                    if (node1 != null && node2 != null)
                     {
-                        node1.peer = node2;
-                        node2.peer = node1;
-                        connectInfo.regionOnePos.Add(SampleNavmeshPos(node1.position, areaOneMask));
-                        connectInfo.regionTwoPos.Add(SampleNavmeshPos(node2.position, areaTwoMask));
+                        node1.isLinkPoint = true;
+                        node2.isLinkPoint = true;
+                        
+                        // 两侧区域都存在的才能作为连接点
+                        if (convexRegion.convexRegionOne.Count != 0 && convexRegion.convexRegionTwo.Count != 0)
+                        {
+                            node1.peer = node2;
+                            node2.peer = node1;
+                            connectInfo.regionOnePos.Add(SampleNavmeshPos(node1.position, areaOneMask));
+                            connectInfo.regionTwoPos.Add(SampleNavmeshPos(node2.position, areaTwoMask));
+                        }
                     }
+                    _convexRegionList.Add(convexRegion);
                 }
             }
+
+            //connectInfo = new PathConnectInfo();
+            //List<CNode> cacheOneList = new List<CNode>();
+            //List<CNode> cacheTwoList = new List<CNode>();
+            //foreach (KeyValuePair<CNode, List<CNode>> tPair in regions)
+            //{
+            //    cacheOneList.Clear();
+            //    cacheTwoList.Clear();
+            //    if (connectedRegions.Contains(tPair.Key))
+            //    {
+            //        tPair.Key.isConnectedRegion = true;
+            //        Vector3 posOne = Vector3.zero;
+            //        Vector3 posTwo = Vector3.zero;
+            //        foreach (CNode tNode in tPair.Value)
+            //        {
+            //            tNode.isConnectedRegion = true;
+            //            if (tNode.inRegionOne)
+            //            {
+            //                cacheOneList.Add(tNode);
+            //                posOne = tNode.position;
+            //            }
+
+            //            if (tNode.inRegionTwo )
+            //            {
+            //                cacheTwoList.Add(tNode);
+            //                posTwo = tNode.position;
+            //            }
+            //        }
+
+            //        CNode node1 = null;
+            //        CNode node2 = null;
+            //        float minDist = Single.PositiveInfinity;
+            //        foreach (CNode n1 in cacheOneList)
+            //        {
+            //            foreach (CNode n2 in cacheTwoList)
+            //            {
+            //                float d = (n1.position - n2.position).sqrMagnitude;
+            //                if (d < minDist && d > 0.25f)
+            //                {
+            //                    minDist = d;
+            //                    node1 = n1;
+            //                    node2 = n2;
+            //                }
+            //            }
+            //        }
+            //        node1.isLinkPoint = true;
+            //        node2.isLinkPoint = true;
+            //        if (cacheOneList.Count != 0 && cacheTwoList.Count != 0)
+            //        {
+            //            node1.peer = node2;
+            //            node2.peer = node1;
+            //            connectInfo.regionOnePos.Add(SampleNavmeshPos(node1.position, areaOneMask));
+            //            connectInfo.regionTwoPos.Add(SampleNavmeshPos(node2.position, areaTwoMask));
+            //        }
+            //    }
+            //}
         }
 
-        private Vector3 SampleNavmeshPos(Vector3 pos,int mask)
+        private Vector3 SampleNavmeshPos(Vector3 pos, int mask)
         {
             bool hasPos = NavMesh.SamplePosition(pos, out var hit, 5f, mask);
             if (hasPos)
@@ -540,41 +628,41 @@ namespace RuntimePathfinding
             return pos;
         }
 
-        private void QueryNeibourNode(CNode node,List<CNode> result)
+        private void QueryNeibourNode(CNode node, List<CNode> result)
         {
             result.Clear();
             int y = node.y;
             int x = node.x;
             int z = node.z;
-            if (InGridRange(x+1, y, z+1))
+            if (InGridRange(x + 1, y, z + 1))
             {
                 result.Add(grids[x + 1, y, z + 1]);
             }
-            if (InGridRange(x+1, y, z))
+            if (InGridRange(x + 1, y, z))
             {
                 result.Add(grids[x + 1, y, z]);
             }
-            if (InGridRange(x+1, y, z-1))
+            if (InGridRange(x + 1, y, z - 1))
             {
                 result.Add(grids[x + 1, y, z - 1]);
             }
-            if (InGridRange(x, y, z+1))
+            if (InGridRange(x, y, z + 1))
             {
                 result.Add(grids[x, y, z + 1]);
             }
-            if (InGridRange(x, y, z-1))
+            if (InGridRange(x, y, z - 1))
             {
                 result.Add(grids[x, y, z - 1]);
             }
-            if (InGridRange(x-1, y, z+1))
+            if (InGridRange(x - 1, y, z + 1))
             {
                 result.Add(grids[x - 1, y, z + 1]);
             }
-            if (InGridRange(x-1, y, z))
+            if (InGridRange(x - 1, y, z))
             {
                 result.Add(grids[x - 1, y, z]);
             }
-            if (InGridRange(x-1, y, z-1))
+            if (InGridRange(x - 1, y, z - 1))
             {
                 result.Add(grids[x - 1, y, z - 1]);
             }
@@ -623,13 +711,34 @@ namespace RuntimePathfinding
         private void OnDrawGizmos()
         {
 #if UNITY_EDITOR
+            if (_convexRegionList != null)
+            {
+                foreach (var tConvexRegion in _convexRegionList)
+                {
+                    Gizmos.color = new Color(0.8f, 0.1f, 0.4f);
+                    for (int i = 0; i < tConvexRegion.convexRegionOne.Count; i++)
+                    {
+                        Gizmos.DrawSphere(tConvexRegion.convexRegionOne[i].pos, 0.1f);
+                        Handles.Label(tConvexRegion.convexRegionOne[i].pos, tConvexRegion.convexRegionOne[i].regionID.ToString());
+                        Gizmos.DrawLine(tConvexRegion.convexRegionOne[i].position, tConvexRegion.convexRegionOne[(i + 1) % tConvexRegion.convexRegionOne.Count].position);
+                    }
+                    Gizmos.color = Color.green;
+                    for (int i = 0; i < tConvexRegion.convexRegionTwo.Count; i++)
+                    {
+                        Gizmos.DrawSphere(tConvexRegion.convexRegionTwo[i].pos, 0.1f);
+                        Handles.Label(tConvexRegion.convexRegionTwo[i].pos, tConvexRegion.convexRegionTwo[i].regionID.ToString());
+                        Gizmos.DrawLine(tConvexRegion.convexRegionTwo[i].position, tConvexRegion.convexRegionTwo[(i + 1) % tConvexRegion.convexRegionTwo.Count].position);
+                    }
+                }
+            }
+
             Gizmos.color = Color.red;
             if (connectInfo != null)
             {
                 for (int i = 0; i < connectInfo.regionOnePos.Count; i++)
                 {
                     Vector3 center = 0.5f * (connectInfo.regionOnePos[i] + connectInfo.regionTwoPos[i]);
-                    Gizmos.DrawLine(connectInfo.regionOnePos[i],connectInfo.regionTwoPos[i]);
+                    Gizmos.DrawLine(connectInfo.regionOnePos[i], connectInfo.regionTwoPos[i]);
                     //Gizmos.DrawLine(center,center + Vector3.up*2.0f);
                 }
             }
@@ -643,28 +752,28 @@ namespace RuntimePathfinding
                 }
             }
 
-            if (grids != null)
-            {
-                foreach (CNode b in grids)
-                {
-                    if (b.isConnectedRegion)
-                    {
-                        //Gizmos.DrawWireCube(b.bound.center, b.bound.size);
-                        if (b.inRegionOne)
-                        {
-                            Gizmos.color = new Color(0.8f, 0.1f, 0.4f);
-                            Gizmos.DrawSphere(b.position, 0.1f);
-                            Handles.Label(b.position, b.regionID.ToString());
-                        }
-                        else if (b.inRegionTwo)
-                        {
-                            Gizmos.color = Color.green;
-                            Gizmos.DrawSphere(b.position, 0.1f);
-                            Handles.Label(b.position, b.regionID.ToString());
-                        }
-                    }
-                }
-            }
+            //if (grids != null)
+            //{
+            //    foreach (CNode b in grids)
+            //    {
+            //        if (b.isConnectedRegion)
+            //        {
+            //            //Gizmos.DrawWireCube(b.bound.center, b.bound.size);
+            //            if (b.inRegionOne)
+            //            {
+            //                Gizmos.color = new Color(0.8f, 0.1f, 0.4f);
+            //                Gizmos.DrawSphere(b.pos, 0.1f);
+            //                Handles.Label(b.pos, b.regionID.ToString());
+            //            }
+            //            else if (b.inRegionTwo)
+            //            {
+            //                Gizmos.color = Color.green;
+            //                Gizmos.DrawSphere(b.pos, 0.1f);
+            //                Handles.Label(b.pos, b.regionID.ToString());
+            //            }
+            //        }
+            //    }
+            //}
 #endif
         }
 

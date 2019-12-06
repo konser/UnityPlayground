@@ -50,7 +50,7 @@ namespace RuntimePathfinding
             _tempBuffer.Clear();
             for (int i = 0; i < currentTileNodes.Count; i++)
             {
-                if (HasPath(currentPos, currentTileNodes[i].position))
+                if (HasPath(currentPos, currentTileNodes[i].pos))
                 {
                     _tempBuffer.Add(currentTileNodes[i]);
                 }
@@ -62,7 +62,7 @@ namespace RuntimePathfinding
                 bool hasPath = false;
                 for (int j = 0; j < nextTileNodes.Count; j++)
                 {
-                    if (HasPath(_tempBuffer[i].peer.position, nextTileNodes[j].position))
+                    if (HasPath(_tempBuffer[i].peer.pos, nextTileNodes[j].pos))
                     {
                         hasPath = true;
                     }
@@ -87,7 +87,7 @@ namespace RuntimePathfinding
             float minDist = Single.MaxValue;
             for (int i = 0; i < _tempBuffer.Count; i++)
             {
-                float d = (currentPos - _tempBuffer[i].position).sqrMagnitude;
+                float d = (currentPos - _tempBuffer[i].pos).sqrMagnitude;
                 if (d < minDist)
                 {
                     minDist = d;
