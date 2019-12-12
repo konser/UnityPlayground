@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace ComputationalGeometry
 {
-    public interface IPoint
+    public interface IConvexPoint
     {
         Vector3 position { get; }
     }
 
-    public class ConvexHull2D<T>  where T : IPoint
+    public class ConvexHull2D<T>  where T : IConvexPoint
     {
         static List<T> _upperHullCacheList;
         static List<T> _lowHullCacheList;

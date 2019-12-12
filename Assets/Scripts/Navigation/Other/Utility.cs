@@ -33,6 +33,19 @@ public static class Utility
         {
             terrains = Terrain.activeTerrains;
         }
+#if UNITY_EDITOR
+        else
+        {
+            for (int i = 0; i < terrains.Length; i++)
+            {
+                if (terrains[i] == null)
+                {
+                    terrains = Terrain.activeTerrains;
+                    break;
+                }
+            }
+        }
+#endif
 
         if (terrains == null || terrains.Length == 0)
         {

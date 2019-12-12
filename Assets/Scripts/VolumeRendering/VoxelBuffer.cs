@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Security.Cryptography.X509Certificates;
-using UnityEngine;
+﻿using UnityEngine;
 
 [System.Serializable]
 public class Box3i {

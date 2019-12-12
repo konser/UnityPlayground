@@ -19,32 +19,6 @@ namespace RuntimePathfinding
         public NavMeshAgent agent;
     }
 
-    /// <summary>
-    /// Navmesh区块标识
-    /// </summary>
-    public struct TileIdentifier
-    {
-        public TileIdentifier(int x, int z, int seqId)
-        {
-            coordX = x;
-            coordZ = z;
-            sequenceIndex = seqId;
-        }
-        /// <summary>
-        /// 格子坐标X
-        /// </summary>
-        public int coordX;
-
-        /// <summary>
-        /// 格子坐标Z
-        /// </summary>
-        public int coordZ;
-
-        /// <summary>
-        /// 该格子在整个路径的顺序序号
-        /// </summary>
-        public int sequenceIndex;
-    }
 
     // todo bugfix
     // todo custom ai movement
@@ -100,6 +74,12 @@ namespace RuntimePathfinding
 #endif
                 }
             }
+        }
+
+        [ContextMenu("PlaceObject")]
+        private void PlaceObject()
+        {
+
         }
 
         #endregion

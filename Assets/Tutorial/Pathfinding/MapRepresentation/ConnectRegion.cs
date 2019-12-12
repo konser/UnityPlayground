@@ -6,7 +6,7 @@ namespace RuntimePathfinding
 {
     public class ConnectRegion
     {
-        public List<CNode> nodes = new List<CNode>();
+        public List<LinkNode> nodes = new List<LinkNode>();
         public Vector3 seedPosition;
         public ConnectRegion(Vector3 seedPos)
         {

@@ -7,9 +7,9 @@ namespace ComputationalGeometry
 {
     public class TestGeometry : MonoBehaviour
     {
-        public struct TestPoint : IPoint
+        public struct TestConvexPoint : IConvexPoint
         {
-            public TestPoint(float x, float y, float z)
+            public TestConvexPoint(float x, float y, float z)
             {
                 pos.x = x;
                 pos.y = y;
@@ -24,8 +24,8 @@ namespace ComputationalGeometry
 
         public float randomRadius = 10f;
         public int randomCount = 30;
-        List<TestPoint> randomPoints = new List<TestPoint>(300);
-        private List<TestPoint> convexHull = new List<TestPoint>(300);
+        List<TestConvexPoint> randomPoints = new List<TestConvexPoint>(300);
+        private List<TestConvexPoint> convexHull = new List<TestConvexPoint>(300);
         [ContextMenu("GenRandomPoint")]
         private void GenRandomPoints()
         {
@@ -33,7 +33,7 @@ namespace ComputationalGeometry
             for (int i = 0; i < randomCount; i++)
             {
                 Vector2 vec2 = Random.insideUnitCircle;
-                randomPoints.Add(new TestPoint(vec2.x* randomRadius, 0, vec2.y* randomRadius));
+                randomPoints.Add(new TestConvexPoint(vec2.x* randomRadius, 0, vec2.y* randomRadius));
             }
         }
 
@@ -42,7 +42,7 @@ namespace ComputationalGeometry
         {
             if (randomPoints.Count != 0)
             {
-                if (!ConvexHull2D<TestPoint>.GetConvexHull2D(randomPoints, convexHull))
+                if (!ConvexHull2D<TestConvexPoint>.GetConvexHull2D(randomPoints, convexHull))
                 {
                     Debug.LogError("Error");
                 }

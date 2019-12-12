@@ -7,14 +7,14 @@ namespace RuntimePathfinding
 {
     public class CrossTilePositionSelector
     {
-        private List<CNode> _tempBuffer = new List<CNode>(20);
+        private List<LinkNode> _tempBuffer = new List<LinkNode>(20);
         private NavMeshPath _resultCachePath;
         public CrossTilePositionSelector()
         {
             _resultCachePath = new NavMeshPath();
         }
 
-        public bool GetValidPosition(Vector3 currentPos,List<CNode> currentTileNodes,List<CNode> nextTileNodes,out CNode targetNode)
+        public bool GetValidPosition(Vector3 currentPos,List<LinkNode> currentTileNodes,List<LinkNode> nextTileNodes,out LinkNode targetNode)
         {
             /*
              * +--------------------------------------------------------++-----------|-----------------------------------------------++---------------------------------------------------------------+
