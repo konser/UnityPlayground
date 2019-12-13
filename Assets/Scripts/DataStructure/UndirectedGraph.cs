@@ -50,7 +50,7 @@ namespace DataStructure
         /// <summary>
         /// 向图中添加一对节点（一条边）
         /// </summary>
-        public void AddPair(GraphNode<T> first,GraphNode<T> second)
+        public void AddPair(GraphNode<T> first,GraphNode<T> second,float cost = Single.MaxValue)
         {
             if (!_nodeList.Contains(first))
             {
@@ -62,8 +62,8 @@ namespace DataStructure
                 _nodeList.Add(second);
             }
 
-            AddNodeNeibour(first,second);
-            AddNodeNeibour(second,first);
+            AddNodeNeibour(first,second,cost);
+            AddNodeNeibour(second,first,cost);
         }
 
         /// <summary>
@@ -126,11 +126,11 @@ namespace DataStructure
             }
         }
 
-        private void AddNodeNeibour(GraphNode<T> first, GraphNode<T> second)
+        private void AddNodeNeibour(GraphNode<T> first, GraphNode<T> second,float cost)
         {
             if (!first.neibours.Contains(second))
             {
-                first.AddNeibour(second);
+                first.AddNeibour(second,cost);
             }
         }
     }

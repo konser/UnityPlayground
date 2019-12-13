@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using ComputationalGeometry;
@@ -15,6 +14,7 @@ using UnityEngine.AI;
 using Debug = UnityEngine.Debug;
 using NavMeshBuilder = UnityEditor.AI.NavMeshBuilder;
 using Object = System.Object;
+
 enum EBakeStage
 {
     CollectTriangle,
@@ -24,7 +24,7 @@ enum EBakeStage
 enum ETileRelativeDir
 {
     NotNeibour,
-    Left, 
+    Left,
     Right,
     Up,
     Bottom
@@ -51,6 +51,15 @@ public class BakedPoint : IConvexPoint
     public int regionID;
     public int subregionID;
 
+    public LinkPoint GetLinkPoint()
+    {
+        return new LinkPoint
+        {
+            ownerTileID = ownerTile,
+            position = pos
+        };
+    }
+
     public Vector3 position
     {
         get { return pos; }
@@ -66,13 +75,13 @@ public class DownsamplingVoxel
     public bool hasAssignedRegion;
     public void SetAvgPosition(Vector3 newPos)
     {
-        averagePos = 0.5f*(averagePos + newPos);
+        averagePos = 0.5f * (averagePos + newPos);
     }
 }
 public class BakedRegion
 {
     public int regionID = -1;
-    public List<Vector3> downsamplePoints  = new List<Vector3>(256);
+    public List<Vector3> downsamplePoints = new List<Vector3>(256);
     public List<BakedPoint> subregionAPoints = new List<BakedPoint>(128);
     public List<BakedPoint> subregionBPoints = new List<BakedPoint>(128);
     public List<BakedPoint> subRegionAConvexHull = new List<BakedPoint>();
@@ -81,6 +90,11 @@ public class BakedRegion
     public Vector3[] convexHullB;
     public Vector3 nearPosA;
     public Vector3 nearPosB;
+
+    public float distanceAB = Single.MaxValue;
+    public BakedPoint bakedPointA;
+    public BakedPoint bakedPointB;
+
     public Vector3 GetFirstSamplePos()
     {
         return downsamplePoints[0];
@@ -120,14 +134,17 @@ public class BakedRegion
                 for (int j = 0; j < convexHullB.Length; j++)
                 {
                     float d = (convexHullB[j] - convexHullA[i]).sqrMagnitude;
-                    if(d < minDist)
+                    if (d < minDist)
                     {
                         minDist = d;
                         nearPosA = convexHullA[i];
                         nearPosB = convexHullB[j];
+                        bakedPointA = subRegionAConvexHull[i];
+                        bakedPointB = subRegionBConvexHull[j];
                     }
                 }
             }
+            distanceAB = minDist;
         }
     }
 }
@@ -475,7 +492,7 @@ public class LinkNodeBakeWindow : EditorWindow
         Handles.color = Color.magenta;
         for (int i = 0; i < debugPoints.Count; i++)
         {
-            Handles.DrawWireCube(debugPoints[i], new Vector3(0.05f,0.01f,0.05f));
+            Handles.DrawWireCube(debugPoints[i], new Vector3(0.05f, 0.01f, 0.05f));
         }
         ItreateTileConnection(DrawTileConnectionPoints);
     }
@@ -497,7 +514,7 @@ public class LinkNodeBakeWindow : EditorWindow
 
     private void DrawTileConnectionPoints(TileConnection connection)
     {
-        Color convexAColor = new Color(0.6f,0.2f,0.2f);
+        Color convexAColor = new Color(0.6f, 0.2f, 0.2f);
         Color convexBColor = new Color(0.3f, 0.5f, 0.2f);
         string connectionInfo = $"{connection.connectedTiles[0]} - {connection.connectedTiles[1]} ";
         foreach (BakedRegion region in connection.regionList)
@@ -515,7 +532,7 @@ public class LinkNodeBakeWindow : EditorWindow
                 Handles.DrawAAConvexPolygon(region.convexHullB);
 
                 Handles.color = Color.blue;
-                Handles.DrawLine(region.nearPosA,region.nearPosB);
+                Handles.DrawLine(region.nearPosA, region.nearPosB);
             }
         }
     }
@@ -641,6 +658,8 @@ public class LinkNodeBakeWindow : EditorWindow
         yield return Stage_CollectTriangle();
         _bakeStage = EBakeStage.SamplePoint;
         yield return Stage_SamplePoint();
+
+        yield return Stage_ConstructPathNode();
     }
 
     // 初始化图
@@ -749,6 +768,15 @@ public class LinkNodeBakeWindow : EditorWindow
         Debug.Log(">>> Stage_SamplePoint <<< Done");
     }
 
+    private IEnumerator Stage_ConstructPathNode()
+    {
+        Debug.Log(">>> Stage_ConstructPathNode <<< Start");
+
+        yield return null;
+
+        Debug.Log(">>> Stage_ConstructPathNode <<< Done");
+    }
+
     #endregion
 
     #region ------------------------------------------------ Collect Triangles ----------------------------------------------------------
@@ -784,41 +812,41 @@ public class LinkNodeBakeWindow : EditorWindow
     // Collect Triangle : Step 0 Prepare terrain
     private IEnumerator Step_CollectTerrainTriangles()
     {
-         GUIUpdateProgress(0f, "Wait for sample terrain height");
-         yield return null;
-         for (int x = 0; x < _terrainHeightMaxX; x++)
-         {
-             for (int z = 0; z < _terrainHeightMaxZ; z++)
-             {
-                 Vector3 pos = new Vector3(x*0.5f+0.25f,0,z*0.5f+0.25f);
-                 _terrainHeightCacheArray[x, z] = Utility.GetTerrainHeight(pos);
-             }
-         }
-         GUIUpdateProgress(0.35f, "Wait for build terrain navmesh");
-         yield return null;
-         NavMeshSurface surf = GenerateTerrainTriangles();
-         //yield return new EditorWaitForSeconds(2f);
-         NavMeshTriangulation triangles = NavMesh.CalculateTriangulation();
-         for (int i = 0; i < triangles.indices.Length; i+=3)
-         {
-             Triangle triangle = new Triangle(
-                    triangles.vertices[triangles.indices[i]],
-                    triangles.vertices[triangles.indices[i+1]],
-                    triangles.vertices[triangles.indices[i+2]]
-                 );
-             triangle.isTerrainTriangle = true;
-             _terrainTriangleList.Add(triangle);
-             GUIUpdateProgress((float)i/triangles.indices.Length,"Collect terrain triangles",false);
-         }
-         yield return null;
-         surf.RemoveData();
-         DestroyImmediate(surf.gameObject);
-         Debug.Log("Terrain Triangle Count " +  _terrainTriangleList.Count);
+        GUIUpdateProgress(0f, "Wait for sample terrain height");
+        yield return null;
+        for (int x = 0; x < _terrainHeightMaxX; x++)
+        {
+            for (int z = 0; z < _terrainHeightMaxZ; z++)
+            {
+                Vector3 pos = new Vector3(x * 0.5f + 0.25f, 0, z * 0.5f + 0.25f);
+                _terrainHeightCacheArray[x, z] = Utility.GetTerrainHeight(pos);
+            }
+        }
+        GUIUpdateProgress(0.35f, "Wait for build terrain navmesh");
+        yield return null;
+        NavMeshSurface surf = GenerateTerrainTriangles();
+        //yield return new EditorWaitForSeconds(2f);
+        NavMeshTriangulation triangles = NavMesh.CalculateTriangulation();
+        for (int i = 0; i < triangles.indices.Length; i += 3)
+        {
+            Triangle triangle = new Triangle(
+                   triangles.vertices[triangles.indices[i]],
+                   triangles.vertices[triangles.indices[i + 1]],
+                   triangles.vertices[triangles.indices[i + 2]]
+                );
+            triangle.isTerrainTriangle = true;
+            _terrainTriangleList.Add(triangle);
+            GUIUpdateProgress((float)i / triangles.indices.Length, "Collect terrain triangles", false);
+        }
+        yield return null;
+        surf.RemoveData();
+        DestroyImmediate(surf.gameObject);
+        Debug.Log("Terrain Triangle Count " + _terrainTriangleList.Count);
     }
 
     private NavMeshSurface GenerateTerrainTriangles()
     {
-        GameObject navmeshSurface  = new GameObject("BakeTerrainTriangles");
+        GameObject navmeshSurface = new GameObject("BakeTerrainTriangles");
         NavMeshSurface surf = navmeshSurface.AddComponent<NavMeshSurface>();
         surf.name = "";
         surf.center = _worldBound.center;
@@ -900,7 +928,7 @@ public class LinkNodeBakeWindow : EditorWindow
     private IEnumerator Step_RemoveIncorrectTriangleInConnection()
     {
         string guiMsg = "[Collect Triangle] Remove useless triangles in connection";
-        ResetThreadParams(_tileCountTotal-1);
+        ResetThreadParams(_tileCountTotal - 1);
         yield return AssignThreadTasksRoutine(
             GetTileIdentifierForThread,
             (obj) =>
@@ -1151,7 +1179,7 @@ public class LinkNodeBakeWindow : EditorWindow
     #region ------------------------------------------- Sample Point----------------------------------------------------------------
 
     private Dictionary<TileIdentifier, NavMeshData> _cachedNavmeshDataDic;
-    private Vector3 _voxelSizeInv= new Vector3(2f,0.5f,2f); // voxel size 0.25,2,0.25
+    private Vector3 _voxelSizeInv = new Vector3(2f, 0.5f, 2f); // voxel size 0.25,2,0.25
     // Sample Point : Step 1
     private IEnumerator Step_PickRandomPointInTriangle()
     {
@@ -1186,7 +1214,7 @@ public class LinkNodeBakeWindow : EditorWindow
                         continue;
                     }
                     float area = triangle.GetTriangleArea();
-                    int sampleCount = Mathf.CeilToInt(area/2f);
+                    int sampleCount = Mathf.CeilToInt(area / 2f);
                     for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++)
                     {
                         Vector2 randomValue = _haltonSequence.GetNext();
@@ -1220,7 +1248,7 @@ public class LinkNodeBakeWindow : EditorWindow
     private IEnumerator Step_DividePointsInDifferentRegion()
     {
         string guiMsg = "[Sample Point] Divide points to different region";
-        ResetThreadParams(_tileCountTotal-1);
+        ResetThreadParams(_tileCountTotal - 1);
         yield return AssignThreadTasksRoutine(GetTileIdentifierForThread,
             (obj) => { return true; }, ConcurrentDownsamplingPoints, guiMsg);
     }
@@ -1238,7 +1266,7 @@ public class LinkNodeBakeWindow : EditorWindow
             }
             return;
         }
-        Debug.Assert(_tileConnectionDic.ContainsKey(tileID),$"Not Conatin {tileID}");
+        Debug.Assert(_tileConnectionDic.ContainsKey(tileID), $"Not Conatin {tileID}");
         TileConnection[] connections = _tileConnectionDic[tileID];
         for (int i = 0; i < connections.Length; i++)
         {
@@ -1312,7 +1340,7 @@ public class LinkNodeBakeWindow : EditorWindow
         GUISetTileSucceed(tileID);
     }
 
-    private void QueryFourNeibours2D(DownsamplingVoxel voxel, DownsamplingVoxel[,,] array , Queue<DownsamplingVoxel> queue)
+    private void QueryFourNeibours2D(DownsamplingVoxel voxel, DownsamplingVoxel[,,] array, Queue<DownsamplingVoxel> queue)
     {
         int x = voxel.x;
         int y = voxel.y;
@@ -1359,7 +1387,7 @@ public class LinkNodeBakeWindow : EditorWindow
     // Sample Point : Step 3
     private IEnumerator Step_CheckRegionConnectivity()
     {
-         _cachedNavmeshDataDic = new Dictionary<TileIdentifier, NavMeshData>(_tileCountTotal);
+        _cachedNavmeshDataDic = new Dictionary<TileIdentifier, NavMeshData>(_tileCountTotal);
         _navMeshPath = new NavMeshPath();
         int totalCount = _tileConnectionDic.Count;
         int currentCount = 0;
@@ -1393,7 +1421,7 @@ public class LinkNodeBakeWindow : EditorWindow
                 // Combine Connective Region
                 for (int i = 0; i < tileConnection.regionList.Count; i++)
                 {
-                    for (int j = i+1; j < tileConnection.regionList.Count; j++)
+                    for (int j = i + 1; j < tileConnection.regionList.Count; j++)
                     {
                         if (CanCombineRegion(tileConnection.regionList[i], tileConnection.regionList[j]))
                         {
@@ -1463,7 +1491,7 @@ public class LinkNodeBakeWindow : EditorWindow
         }
     }
 
-    private bool CanCombineRegion(BakedRegion regionA,BakedRegion regionB)
+    private bool CanCombineRegion(BakedRegion regionA, BakedRegion regionB)
     {
         if (regionA.downsamplePoints == null || regionB.downsamplePoints == null)
         {
@@ -1484,7 +1512,7 @@ public class LinkNodeBakeWindow : EditorWindow
         return false;
     }
 
-    private void BakeNavmesh(NavMeshSurface surface,Vector3 pos,Vector3 size)
+    private void BakeNavmesh(NavMeshSurface surface, Vector3 pos, Vector3 size)
     {
         surface.center = pos;
         surface.size = size;
@@ -1494,7 +1522,7 @@ public class LinkNodeBakeWindow : EditorWindow
     // Sample Point : Step 4
     private IEnumerator Step_CreateConvexHull()
     {
-        ResetThreadParams(_tileCountTotal-1);
+        ResetThreadParams(_tileCountTotal - 1);
         string guiMsg = "[Sample Point] Create convex hull";
         yield return AssignThreadTasksRoutine(GetTileIdentifierForThread, (obj) => { return true; }, ConcurrentCreateConvexHull, guiMsg);
     }
@@ -1516,7 +1544,7 @@ public class LinkNodeBakeWindow : EditorWindow
         {
             foreach (BakedRegion region in tileConnection[i].regionList)
             {
-                if(region != null)
+                if (region != null)
                 {
                     region.CreateConvexRegion();
                 }
@@ -1535,7 +1563,53 @@ public class LinkNodeBakeWindow : EditorWindow
 
     #region -----------------------------------------------Create Node Graph-------------------------------------------------------------------------
 
+    public UndirectedGraph<LinkPoint> pathfindingGraph;
 
+    private IEnumerator Step_ConstructGraph()
+    {
+        pathfindingGraph = new UndirectedGraph<LinkPoint>();
+        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], ConnectGraphNodes);
+    }
+
+    private void ConnectGraphNodes(GraphNode<TileIdentifier> idNode)
+    {
+        TileIdentifier tileID = idNode.value;
+
+        bool connectLeft = false;
+        bool connectBottom = false;
+        if (tileID.coordX == 0 && tileID.coordZ == 0)
+        {
+          
+        }else if (tileID.coordX == 0)
+        {
+            connectBottom = true;
+        }
+        else if (tileID.coordZ == 0)
+        {
+            connectLeft = true;
+        }
+        else
+        {
+            connectLeft = true;
+            connectBottom = true;
+        }
+
+        BakeNavmesh(_bakeTileOneSurface, _tileBoundsDic[tileID].center, _tileBoundsDic[tileID].size);
+        //_cachedNavmeshDataDic[tileConnection.connectedTiles[0]] = _bakeTileOneSurface.navMeshData;
+        if (_tileConnectionDic.ContainsKey(tileID))
+        {
+            foreach (TileConnection tileConnect in _tileConnectionDic[tileID])
+            {
+                foreach (BakedRegion tRegion in tileConnect.regionList)
+                {
+                    pathfindingGraph.AddPair(new GraphNode<LinkPoint>(tRegion.bakedPointA.GetLinkPoint()),
+                        new GraphNode<LinkPoint>(tRegion.bakedPointB.GetLinkPoint()),
+                        tRegion.distanceAB);
+                }
+            }
+        }
+
+    }
 
     #endregion
 }

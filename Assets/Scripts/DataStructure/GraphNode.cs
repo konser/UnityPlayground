@@ -11,6 +11,7 @@ namespace DataStructure
     {
         private List<GraphNode<T>> _neibourList;
         private T _value;
+        private Dictionary<GraphNode<T>, float> _costDic;
 
         public GraphNode(T value, IEnumerable<GraphNode<T>> neibours = null)
         {
@@ -23,6 +24,7 @@ namespace DataStructure
             {
                 _neibourList = neibours.ToList();
             }
+            _costDic = new Dictionary<GraphNode<T>, float>();
         }
 
         public GraphNode(T value, GraphNode<T>[] neibours) : this(value, (IEnumerable<GraphNode<T>>)neibours)
@@ -44,24 +46,31 @@ namespace DataStructure
             get { return _neibourList; }
         }
 
-        public void AddNeibour(GraphNode<T> neibour)
+        public void AddNeibour(GraphNode<T> neibour,float cost = 0)
         {
             _neibourList.Add(neibour);
+            _costDic[neibour] = cost;
         }
 
-        public void AddNeibours(params GraphNode<T>[] neibours)
+        public void AddNeibours(GraphNode<T>[] neibours,params float[] costs)
         {
             _neibourList.AddRange(neibours);
+
+            for (int i = 0; i < neibours.Length; i++)
+            {
+                _costDic[neibours[i]] = costs[i];
+            }
         }
 
-        public void AddNeibours(IEnumerable<GraphNode<T>> neibours)
-        {
-            _neibourList.AddRange(neibours);
-        }
+        //public void AddNeibours(IEnumerable<GraphNode<T>> neibours)
+        //{
+        //    _neibourList.AddRange(neibours);
+        //}
 
         public void RemoveNeibour(GraphNode<T> node)
         {
             _neibourList.Remove(node);
+            _costDic.Remove(node);
         }
     }
 }

@@ -71,7 +71,7 @@ namespace RuntimePathfinding
 
         public void AddLinkInfo(GraphNode<LinkPoint> first,GraphNode<LinkPoint> second)
         {
-            mapGraph.AddPair(first,second);
+            mapGraph.AddPair(first,second,0);
         }
 
         public void QueryValidLinkPosition(TileIdentifier from,TileIdentifier to,List<CrossTileInfo> crossInfoList)
