@@ -43,7 +43,7 @@ namespace RuntimePathfinding
         public Vector3 normal;
         private bool areaCalculated;
         public List<Vector3> samplePointList = new List<Vector3>(50);
-
+        public bool isTerrainTriangle = false;
         public Triangle(Vector3 p1, Vector3 p2, Vector3 p3)
         {
             vertA = p1;

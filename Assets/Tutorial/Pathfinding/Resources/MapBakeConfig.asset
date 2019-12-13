@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c60aad06b4b54f8da1864e917c841aca, type: 3}
   m_Name: MapBakeConfig
   m_EditorClassIdentifier: 
-  mapSize: {x: 256, y: 32, z: 256}
-  tileSize: {x: 32, y: 32, z: 32}
+  mapSize: {x: 512, y: 256, z: 512}
+  tileSize: {x: 32, y: 256, z: 32}
   linkBakeWidth: 4
   collectLayers:
     serializedVersion: 2

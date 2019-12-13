@@ -10,11 +10,10 @@ namespace ComputationalGeometry
 
     public class ConvexHull2D<T>  where T : IConvexPoint
     {
-        static List<T> _upperHullCacheList;
-        static List<T> _lowHullCacheList;
-
         public static bool GetConvexHull2D(List<T> pointList,List<T> result)
         {
+            List<T> _upperHullCacheList = new List<T>(100);
+            List<T> _lowHullCacheList = new List<T>(100);
             result.Clear();
             if (pointList == null)
             {
@@ -26,18 +25,18 @@ namespace ComputationalGeometry
                 return false;
             } 
 
-            if (_upperHullCacheList == null)
-            {
-                _upperHullCacheList = new List<T>(100);
-            }
+            //if (_upperHullCacheList == null)
+            //{
+            //    _upperHullCacheList = new List<T>(100);
+            //}
 
-            if (_lowHullCacheList == null)
-            {
-                _lowHullCacheList = new List<T>(100);
-            }
+            //if (_lowHullCacheList == null)
+            //{
+            //    _lowHullCacheList = new List<T>(100);
+            //}
 
-            _upperHullCacheList.Clear();
-            _lowHullCacheList.Clear();
+            //_upperHullCacheList.Clear();
+            //_lowHullCacheList.Clear();
 
             // 按x轴从小到大排序 x轴相同则比较z轴
             pointList.Sort((a, b) =>
