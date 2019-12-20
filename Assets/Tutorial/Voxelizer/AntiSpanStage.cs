@@ -18,7 +18,7 @@ public class AntiSpanStage
                 {
                     x = voxel.x,
                     z = voxel.z,
-                    spanList = new List<MyVec3>()
+                    spanList = new List<SerializableVec3>()
                     {
                         new Vector2(0f, maxHeight)
                     }
@@ -37,7 +37,7 @@ public class AntiSpanStage
         VoxelSpan antiSpan = new VoxelSpan();
         antiSpan.x = voxelSpan.x;
         antiSpan.z = voxelSpan.z;
-        antiSpan.spanList = new List<MyVec3>();
+        antiSpan.spanList = new List<SerializableVec3>();
         int spanCount = voxelSpan.spanList.Count;
 
         for (int i = 0; i < spanCount; i++)

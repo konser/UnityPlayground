@@ -46,6 +46,11 @@ namespace DataStructure
             get { return _neibourList; }
         }
 
+        public float CostToNeibour(GraphNode<T> neibourNode)
+        {
+            return _costDic[neibourNode];
+        }
+
         public void AddNeibour(GraphNode<T> neibour,float cost = 0)
         {
             _neibourList.Add(neibour);

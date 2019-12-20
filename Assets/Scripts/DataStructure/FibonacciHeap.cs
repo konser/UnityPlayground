@@ -31,6 +31,7 @@ namespace FibonacciHeap
         public FibonacciHeap( TKey minKeyValue )
         {
             _minKeyValue = minKeyValue;
+            _consolidateCacheList = new List<FibonacciHeapNode<T, TKey>>(1000);
         }
         #endregion
 
@@ -261,16 +262,16 @@ namespace FibonacciHeap
             }
         }
 
+        private List<FibonacciHeapNode<T, TKey>> _consolidateCacheList;
         protected void Consolidate()
         {
+            _consolidateCacheList.Clear();
             int arraySize = ((int) Math.Floor(Math.Log(_nNodes)*Constants.OneOverLogPhi)) + 1;
-
-            var array = new List<FibonacciHeapNode<T, TKey>>(arraySize);
 
             // Initialize degree array
             for (var i = 0; i < arraySize; i++)
             {
-                array.Add(null);
+                _consolidateCacheList.Add(null);
             }
 
             // Find the number of root nodes.
@@ -299,7 +300,7 @@ namespace FibonacciHeap
                 // ..and see if there's another of the same degree.
                 for (;;)
                 {
-                    FibonacciHeapNode<T, TKey> y = array[d];
+                    FibonacciHeapNode<T, TKey> y = _consolidateCacheList[d];
                     if (y == null)
                     {
                         // Nope.
@@ -319,13 +320,13 @@ namespace FibonacciHeap
                     Link(y, x);
 
                     // We've handled this degree, go to next one.
-                    array[d] = null;
+                    _consolidateCacheList[d] = null;
                     d++;
                 }
 
                 // Save this node for later when we might encounter another
                 // of the same degree.
-                array[d] = x;
+                _consolidateCacheList[d] = x;
 
                 // Move forward through list.
                 x = next;
@@ -338,7 +339,7 @@ namespace FibonacciHeap
 
             for (var i = 0; i < arraySize; i++)
             {
-                FibonacciHeapNode<T, TKey> y = array[i];
+                FibonacciHeapNode<T, TKey> y = _consolidateCacheList[i];
                 if (y == null)
                 {
                     continue;

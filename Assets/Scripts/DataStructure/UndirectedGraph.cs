@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace DataStructure
 {
@@ -52,18 +51,21 @@ namespace DataStructure
         /// </summary>
         public void AddPair(GraphNode<T> first,GraphNode<T> second,float cost = Single.MaxValue)
         {
-            if (!_nodeList.Contains(first))
+            lock (_nodeList)
             {
-                _nodeList.Add(first);
-            }
+                if (!_nodeList.Contains(first))
+                {
+                    _nodeList.Add(first);
+                }
 
-            if (!_nodeList.Contains(second))
-            {
-                _nodeList.Add(second);
-            }
+                if (!_nodeList.Contains(second))
+                {
+                    _nodeList.Add(second);
+                }
 
-            AddNodeNeibour(first,second,cost);
-            AddNodeNeibour(second,first,cost);
+                AddNodeNeibour(first, second, cost);
+                AddNodeNeibour(second, first, cost);
+            }
         }
 
         /// <summary>
@@ -109,20 +111,26 @@ namespace DataStructure
                 action.Invoke(node);
                 count++;
             }
-            Debug.Log(count);
         }
 
-        public IEnumerator IterateBFSCoroutine(GraphNode<T> startNode, Action<GraphNode<T>> action)
+        public IEnumerator IterateBFSCoroutine(GraphNode<T> startNode, Action<GraphNode<T>> action,int yieldCount = 32)
         {
             if (action == null)
             {
                 yield break;
             }
             var it = new BreadthFirstIterator<T>(startNode);
+            int loopCount = 0;
+            int lastCount = 0;
             foreach (GraphNode<T> node in it.Iterate())
             {
                 action.Invoke(node);
-                yield return null;
+                loopCount++;
+                if (loopCount - lastCount > yieldCount)
+                {
+                    lastCount = loopCount;
+                    yield return null;
+                }
             }
         }
 

@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c60aad06b4b54f8da1864e917c841aca, type: 3}
   m_Name: MapBakeConfig
   m_EditorClassIdentifier: 
-  mapSize: {x: 512, y: 256, z: 512}
-  tileSize: {x: 32, y: 256, z: 32}
+  mapSize: {x: 8192, y: 256, z: 8192}
+  sectorSize: {x: 1024, y: 256, z: 1024}
+  tileSize: {x: 256, y: 256, z: 256}
   linkBakeWidth: 4
   collectLayers:
     serializedVersion: 2
-    m_Bits: 1536
-  maxAngleAllowed: 18
+    m_Bits: 1024
+  mapInfoFileSaveName: Test
+  maxAngleAllowed: 30
+  bakeAllSector: 0
+  sectorIndexList: []

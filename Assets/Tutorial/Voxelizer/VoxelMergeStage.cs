@@ -6,61 +6,61 @@ using UnityEngine;
 /// 为了序列化
 /// </summary>
 [System.Serializable]
-public struct MyVec3
+public struct SerializableVec3
 {
     public float x;
     public float y;
     public float z;
-    public MyVec3(float x, float y, float z)
+    public SerializableVec3(float x, float y, float z)
     {
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    public MyVec3(float x, float y)
+    public SerializableVec3(float x, float y)
     {
         this.x = x;
         this.y = y;
         this.z = 0f;
     }
 
-    public MyVec3(Vector3 v3)
+    public SerializableVec3(Vector3 v3)
     {
         x = v3.x;
         y = v3.y;
         z = v3.z;
     }
 
-    public MyVec3(Vector2 v2)
+    public SerializableVec3(Vector2 v2)
     {
         x = v2.x;
         y = v2.y;
         z = 0f;
     }
     
-    public MyVec3 XZ()
+    public SerializableVec3 XZ()
     {
-        return new MyVec3(x,0,z);
+        return new SerializableVec3(x,0,z);
     }
 
-    public static implicit operator MyVec3(Vector3 v)
+    public static implicit operator SerializableVec3(Vector3 v)
     {
-        return new MyVec3(v);
+        return new SerializableVec3(v);
     }
 
-    public static implicit operator MyVec3(Vector2 v)
+    public static implicit operator SerializableVec3(Vector2 v)
     {
-        return new MyVec3(v);
+        return new SerializableVec3(v);
     }
 
 
-    public static implicit operator Vector3(MyVec3 v)
+    public static implicit operator Vector3(SerializableVec3 v)
     {
         return new Vector3(v.x,v.y,v.z);
     }
 
-    public static implicit operator Vector2(MyVec3 v)
+    public static implicit operator Vector2(SerializableVec3 v)
     {
         return new Vector2(v.x,v.y);
     }
@@ -74,7 +74,7 @@ public struct VoxelSpan
     /// <summary>
     /// 上下表面高度 x-下 y-上
     /// </summary>
-    public List<MyVec3> spanList;
+    public List<SerializableVec3> spanList;
 
     public bool isEmpty
     {
@@ -137,7 +137,7 @@ public class VoxelMergeStage
         VoxelSpan voxelSpan = new VoxelSpan();
         voxelSpan.x = x;
         voxelSpan.z = z;
-        voxelSpan.spanList = new List<MyVec3>();
+        voxelSpan.spanList = new List<SerializableVec3>();
 
         int voxelCount = 0;
         for (int i = 0; i < _yMax; i++)

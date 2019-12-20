@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using ComputationalGeometry;
 using DataStructure;
@@ -18,7 +18,8 @@ using Object = System.Object;
 enum EBakeStage
 {
     CollectTriangle,
-    SamplePoint
+    SamplePoint,
+    ConstructGraph
 }
 
 enum ETileRelativeDir
@@ -42,6 +43,44 @@ public class TileConnection
     {
         connectedTiles = new[] { tileOne, tileTwo };
     }
+
+    public void GetBakedPointInTile(TileIdentifier tileID, List<BakedPoint> result)
+    {
+        if (ContainsTileID(tileID) == false)
+        {
+            return;
+        }
+        for (int i = 0; i < regionList.Count; i++)
+        {
+            BakedPoint bakedPointA = regionList[i].bakedPointA;
+            BakedPoint bakedPointB = regionList[i].bakedPointB;
+            if (bakedPointA != null && bakedPointB != null)
+            {
+                if (bakedPointA.ownerTile.Equals(tileID))
+                {
+                    result.Add(bakedPointA);
+                }
+                else if (bakedPointB.ownerTile.Equals(tileID))
+                {
+                    result.Add(bakedPointB);
+                }
+            }
+        }
+    }
+
+    private bool ContainsTileID(TileIdentifier tileID)
+    {
+        bool contains = false;
+        for (int i = 0; i < connectedTiles.Length; i++)
+        {
+            if (connectedTiles[i].Equals(tileID))
+            {
+                contains = true;
+                break;
+            }
+        }
+        return contains;
+    }
 }
 
 public class BakedPoint : IConvexPoint
@@ -50,14 +89,19 @@ public class BakedPoint : IConvexPoint
     public Vector3 pos;
     public int regionID;
     public int subregionID;
+    private NavigationNode _graphNode;
 
-    public LinkPoint GetLinkPoint()
+    public NavigationNode ToGraphNode()
     {
-        return new LinkPoint
+        if (_graphNode == null)
         {
-            ownerTileID = ownerTile,
-            position = pos
-        };
+            _graphNode = new NavigationNode(new LinkPoint
+            {
+                ownerTileID = ownerTile,
+                position = pos
+            });
+        }
+        return _graphNode;
     }
 
     public Vector3 position
@@ -78,6 +122,71 @@ public class DownsamplingVoxel
         averagePos = 0.5f * (averagePos + newPos);
     }
 }
+
+public class TerrainHeightSampler
+{
+    private Vector3[] terrainPosMin;
+    private Vector3[] terrainPosMax;
+    private float[][,] terrainHeightMaps;
+    private float terrainTileSizeX;
+    private float terrainTileSizeZ;
+    private Vector3 heightmapScale;
+    private int heightmapRes;
+    public TerrainHeightSampler()
+    {
+        InitTerrainData();
+    }
+
+    void InitTerrainData()
+    {
+        Terrain[] terrains = Terrain.activeTerrains;
+        if (terrains.Length == 0)
+        {
+            return;
+        }
+        // 此处假定每块terrain的尺寸是相等的
+        terrainTileSizeX = terrains[0].terrainData.size.x;
+        terrainTileSizeZ = terrains[0].terrainData.size.z;
+        heightmapScale = terrains[0].terrainData.heightmapScale;
+        heightmapScale.y = terrains[0].terrainData.size.y;
+        heightmapRes = terrains[0].terrainData.heightmapResolution;
+        terrainPosMin = new Vector3[terrains.Length];
+        terrainPosMax = new Vector3[terrains.Length];
+        terrainHeightMaps = new float[terrains.Length][,];
+        for (int i = 0; i < terrains.Length; i++)
+        {
+            TerrainData data = terrains[i].terrainData;
+            terrainPosMin[i] = terrains[i].GetPosition();
+            terrainPosMax[i] = terrainPosMin[i] + data.size;
+            terrainHeightMaps[i] = data.GetHeights(0, 0, heightmapRes, heightmapRes);
+        }
+    }
+
+    public float GetTerrainHeight(Vector3 worldPos)
+    {
+        int index = -1;
+        for (int i = 0; i < terrainPosMin.Length; i++)
+        {
+            Vector3 min = terrainPosMin[i];
+            Vector3 max = terrainPosMax[i];
+            if (worldPos.x >= min.x && worldPos.x <= max.x && worldPos.z >= min.z && worldPos.z <= max.z)
+            {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1)
+        {
+            Debug.LogError($"GetTerrainHeight : Invalid world pos {worldPos}");
+            return 0;
+        }
+        Vector3 relativePos = worldPos - terrainPosMin[index];
+        int x = (int)((relativePos.x / terrainTileSizeX) * heightmapRes);
+        int z = (int)((relativePos.z / terrainTileSizeZ) * heightmapRes);
+        return terrainHeightMaps[index][z, x] * heightmapScale.y + terrainPosMin[index].y;
+    }
+}
+
 public class BakedRegion
 {
     public int regionID = -1;
@@ -88,17 +197,10 @@ public class BakedRegion
     public List<BakedPoint> subRegionBConvexHull = new List<BakedPoint>();
     public Vector3[] convexHullA;
     public Vector3[] convexHullB;
-    public Vector3 nearPosA;
-    public Vector3 nearPosB;
 
     public float distanceAB = Single.MaxValue;
     public BakedPoint bakedPointA;
     public BakedPoint bakedPointB;
-
-    public Vector3 GetFirstSamplePos()
-    {
-        return downsamplePoints[0];
-    }
 
     public void CreateConvexRegion()
     {
@@ -134,11 +236,10 @@ public class BakedRegion
                 for (int j = 0; j < convexHullB.Length; j++)
                 {
                     float d = (convexHullB[j] - convexHullA[i]).sqrMagnitude;
-                    if (d < minDist)
+                    // 不要距离过近的点
+                    if (d < minDist && d > 1.0f)
                     {
                         minDist = d;
-                        nearPosA = convexHullA[i];
-                        nearPosB = convexHullB[j];
                         bakedPointA = subRegionAConvexHull[i];
                         bakedPointB = subRegionBConvexHull[j];
                     }
@@ -189,11 +290,14 @@ public class LinkNodeBakeWindow : EditorWindow
                     object obj = getThreadParamFunc.Invoke(_threadHelperIndex);
                     bool canAssignTask = checkCanAssignTaskFunc.Invoke(obj);
                     _threadHelperIndex++;
+
                     if (!canAssignTask)
                     {
                         continue;
                     }
+                    //Debug.Log("");
                     Task.Factory.StartNew(action, obj);
+
                     lock (_locker)
                     {
                         _threadAvailableCount--;
@@ -212,8 +316,11 @@ public class LinkNodeBakeWindow : EditorWindow
 
     private Vector3 GetTileCenterPosition(TileIdentifier tileID)
     {
-        Vector3 center = new Vector3((tileID.coordX + 0.5f) * _config.tileSize.x, VERTICAL_POS_OFFSET_RATIO * _config.tileSize.y, (tileID.coordZ + 0.5f) * _config.tileSize.z);
-        center.y += Utility.GetTerrainHeight(center);
+        Vector3 center = new Vector3(
+            (tileID.coordX + 0.5f) * _config.tileSize.x+_sectorOffsetX, 
+            VERTICAL_POS_OFFSET_RATIO * _config.tileSize.y, 
+            (tileID.coordZ + 0.5f) * _config.tileSize.z +_sectorCountZ);
+        center.y += _terrianHeightSampler.GetTerrainHeight(center);
         return center;
     }
 
@@ -237,23 +344,19 @@ public class LinkNodeBakeWindow : EditorWindow
         return ETileRelativeDir.NotNeibour;
     }
 
-    private float GetTerrainHeight(Vector3 pos)
+    public TileConnection[] GetTileConnections(TileIdentifier id)
     {
-        // 0.5m*0.5m 的格子 乘2得索引
-        pos *= 2.0f;
-        int x = (int)pos.x;
-        int z = (int)pos.z;
-        if (x >= 0 && z >= 0 && x < _terrainHeightMaxX && z < _terrainHeightMaxZ)
+        if (_tileConnectionDic.ContainsKey(id))
         {
-            return _terrainHeightCacheArray[x, z];
+            return _tileConnectionDic[id];
         }
-        return 0f;
+        return null;
     }
 
     #endregion
 
     [MenuItem("Tools/Bake Map")]
-    static void RenderCubemap()
+    static void BakeMapWindow()
     {
         _s_windowInstance = EditorWindow.GetWindow<LinkNodeBakeWindow>();
         _s_windowInstance.minSize = new Vector2(_s_windowWidth, _s_windowHeight);
@@ -261,20 +364,20 @@ public class LinkNodeBakeWindow : EditorWindow
         _s_windowInstance.ShowTab();
     }
     private static float _s_windowWidth = 768f;
-    private static float _s_windowHeight = 768f;
+    private static float _s_windowHeight = 960;
     private static LinkNodeBakeWindow _s_windowInstance;
+
+
+    private TerrainHeightSampler _terrianHeightSampler;
     private void Awake()
     {
         if (_inited == false)
         {
             Initialize();
             GUIInitialize();
+            _terrianHeightSampler = new TerrainHeightSampler();
             _inited = true;
         }
-    }
-
-    private void OnEnable()
-    {
     }
 
     private void OnDestroy()
@@ -323,14 +426,15 @@ public class LinkNodeBakeWindow : EditorWindow
             GUILayout.Label("Init Failed!");
             return;
         }
-        GUILayout.Label($"Tile Count {_tileCountX} - {_tileCountZ}");
         if (GUILayout.Button("BakeMap") && !_bakeStarted)
         {
             _bakeStarted = true;
             BakeMap();
         }
-
-        EditorGUI.ProgressBar(new Rect(Vector2.one * 60f, new Vector2(640f, 30f)), _guiProgress, _guiProgressMsg);
+        EditorGUI.ProgressBar(new Rect(new Vector2(60f,20f), new Vector2(640f, 30f)), _guiProgress, _guiProgressMsg);
+        EditorGUILayout.Space(60);
+        EditorGUILayout.LabelField($"Sector Count {_sectorCountX} - {_sectorCountZ}  | Tile Count {_tileCountX} - {_tileCountZ}");
+        GUIDrawSectorIndex();
         GUIDrawTileGrid();
     }
 
@@ -359,6 +463,22 @@ public class LinkNodeBakeWindow : EditorWindow
                 }
             }
         }
+    }
+
+    private void GUIDrawSectorIndex()
+    {
+        StringBuilder bakedSector = new StringBuilder(64);
+        bakedSector.Append("Baked: \n");
+        for (int i = 0; i < _bakedSector.Count; i++)
+        {
+            bakedSector.Append($"{_bakedSector[i]} ");
+        }
+        bakedSector.Append("Remain: \n");
+        for (int i = 0; i < _sectorList.Count; i++)
+        {
+            bakedSector.Append($"{_sectorList[i]} ");
+        }
+        EditorGUILayout.LabelField(" ");
     }
 
     private void GUIClearProgress()
@@ -402,20 +522,27 @@ public class LinkNodeBakeWindow : EditorWindow
     private bool _drawTileConnectionTriangles;
 
     private bool _drawRandomPoints;
+    private bool _drawTerrainTriangle;
+    private bool _drawConvexPolygon;
+
+    private bool _drawFinalGraph;
     private Vector2Int _tileID;
     private void OnSceneGUI(SceneView sceneView)
     {
         // GUI
         Handles.BeginGUI();
         _enableDebugDraw = GUILayout.Toggle(_enableDebugDraw, "Enable Debug Draw");
-        _sceneDrawWorldBound = GUILayout.Toggle(_sceneDrawWorldBound, "Draw World Bound");
         _drawTileBound = GUILayout.Toggle(_drawTileBound, "Draw Tile Bound");
+        _drawFinalGraph = GUILayout.Toggle(_drawFinalGraph, "Draw Final Graph");
+        _drawConvexPolygon = GUILayout.Toggle(_drawConvexPolygon, "Draw Convex Polygons");
+        GUILayout.Space(20);
+        _sceneDrawWorldBound = GUILayout.Toggle(_sceneDrawWorldBound, "Draw World Bound");
         _drawTileConnectionBound = GUILayout.Toggle(_drawTileConnectionBound, "Draw Tile Connection Bound");
         GUILayout.Space(10);
         _drawTileTriangles = GUILayout.Toggle(_drawTileTriangles, "Draw Tile Triangles");
         _drawTileConnectionTriangles = GUILayout.Toggle(_drawTileConnectionTriangles, "Draw Tile Connection Triangles");
         GUILayout.Space(10);
-
+        _drawTerrainTriangle = GUILayout.Toggle(_drawTerrainTriangle, "Draw Terrain Triangles");
         _drawRandomPoints = GUILayout.Toggle(_drawRandomPoints, "Draw Random Points");
         Handles.EndGUI();
 
@@ -431,18 +558,6 @@ public class LinkNodeBakeWindow : EditorWindow
             Handles.DrawWireCube(_worldBound.center, _worldBound.size);
         }
 
-        if (_drawTileBound && _tileBoundsDic != null)
-        {
-            Handles.color = Color.green;
-            foreach (KeyValuePair<TileIdentifier, Bounds> tPair in _tileBoundsDic)
-            {
-                // 只画包括了三角面的区块
-                if (_tileTriangleDic[tPair.Key].Count > 0)
-                {
-                    Handles.DrawWireCube(tPair.Value.center, tPair.Value.size);
-                }
-            }
-        }
 
         if (_drawTileTriangles && _tileTriangleDic != null)
         {
@@ -453,6 +568,14 @@ public class LinkNodeBakeWindow : EditorWindow
                 {
                     DrawTriangle(triangle);
                 }
+            }
+        }
+
+        if (_drawTileBound && _tileBoundsDic != null)
+        {
+            foreach (KeyValuePair<TileIdentifier, Bounds> tPair in _tileBoundsDic)
+            {
+                Handles.DrawWireCube(tPair.Value.center, tPair.Value.size);
             }
         }
 
@@ -483,10 +606,14 @@ public class LinkNodeBakeWindow : EditorWindow
             }
         }
 
-        Handles.color = Color.cyan;
-        foreach (Triangle tTriangle in _terrainTriangleList)
+        if (_drawConvexPolygon)
         {
-            DrawTriangle(tTriangle);
+            ItreateTileConnection(DrawTileConnectionPoints);
+        }
+
+        if (_drawFinalGraph && navigationGraph != null)
+        {
+            navigationGraph.IterateBFS(navigationGraph.nodeList[0], DrawNodeConnections);
         }
 
         Handles.color = Color.magenta;
@@ -494,7 +621,6 @@ public class LinkNodeBakeWindow : EditorWindow
         {
             Handles.DrawWireCube(debugPoints[i], new Vector3(0.05f, 0.01f, 0.05f));
         }
-        ItreateTileConnection(DrawTileConnectionPoints);
     }
 
     private void ItreateTileConnection(Action<TileConnection> action)
@@ -512,6 +638,22 @@ public class LinkNodeBakeWindow : EditorWindow
         }
     }
 
+    private void DrawNodeConnections(GraphNode<LinkPoint> linkPointNode)
+    {
+        for (int i = 0; i < linkPointNode.neiboursCount; i++)
+        {
+            if (i % 2 == 0)
+            {
+                Handles.color = Color.red;
+            }
+            else
+            {
+                Handles.color = Color.blue;
+            }
+            Handles.DrawLine(linkPointNode.value.position, linkPointNode.neibours[i].value.position);
+        }
+    }
+
     private void DrawTileConnectionPoints(TileConnection connection)
     {
         Color convexAColor = new Color(0.6f, 0.2f, 0.2f);
@@ -523,16 +665,16 @@ public class LinkNodeBakeWindow : EditorWindow
             {
                 Handles.color = convexAColor;
 
-                Handles.Label(region.convexHullA[0], connectionInfo + region.regionID + " A");
+                //Handles.Label(region.convexHullA[0], connectionInfo + region.regionID + " A");
                 Handles.DrawAAConvexPolygon(region.convexHullA);
 
                 Handles.color = convexBColor;
 
-                Handles.Label(region.convexHullB[0], connectionInfo + region.regionID + " B");
+                //Handles.Label(region.convexHullB[0], connectionInfo + region.regionID + " B");
                 Handles.DrawAAConvexPolygon(region.convexHullB);
 
                 Handles.color = Color.blue;
-                Handles.DrawLine(region.nearPosA, region.nearPosB);
+                Handles.DrawLine(region.bakedPointA.pos, region.bakedPointB.pos);
             }
         }
     }
@@ -553,7 +695,7 @@ public class LinkNodeBakeWindow : EditorWindow
     #region -------------------------------------------Main-------------------------------------------------------- 
 
     private const float VERTICAL_POS_OFFSET_RATIO = 0.3f;
-    private const int THREAD_COUNT = 32;
+    private const int THREAD_COUNT = 64;
     private const float NAVMESH_SAMPLE_RADIUS = 0.15f;
     private bool _inited; // 初始化完成标志
     private bool _bakeStarted; // 开始烘培标志
@@ -562,6 +704,7 @@ public class LinkNodeBakeWindow : EditorWindow
     private MapBakeConfig _config; // 烘培配置
 
     private EBakeStage _bakeStage; // 当前阶段
+    private EditorCoroutine _mainRoutine; // 主协程
 
     private int _bakeLinkArea;
     private int _bakeTileOneArea;
@@ -574,35 +717,43 @@ public class LinkNodeBakeWindow : EditorWindow
     private NavMeshSurface _bakeTileTwoSurface;
 
     private Bounds _worldBound; // 整个地图范围包围盒
-    private int _collectedTiles; // 当前已完成的tile数
-    private int _remainTiles; // 剩余tile数量
-    private UndirectedGraph<TileIdentifier> _tileGraph; // tileID的图
-    private List<GraphNode<TileIdentifier>> _tileIDNodeList; // tile的图节点
+    private float _sectorOffsetX; // 该区块的x轴起始位置相对于0的偏移量
+    private float _sectorOffsetZ;// 该区块的z轴起始位置相对于0的偏移量
+    private int _sectorCountX;
+    private int _sectorCountZ;
+    private Vector2Int _currentSector;
+    private List<Vector2Int> _sectorList = new List<Vector2Int>();
+    private List<Vector2Int> _bakedSector = new List<Vector2Int>();
     private int _tileCountX; // X方向tile数量
     private int _tileCountZ; // Z方向tile数量
     private int _tileCountTotal; // 总数量
+    private UndirectedGraph<TileIdentifier> _tileGraph; // tileID的图
+    private List<GraphNode<TileIdentifier>> _tileIDNodeList; // tile的图节点
+    private bool[,] _tileBakedArray;
+    private Dictionary<TileIdentifier, List<Triangle>> _tileTriangleDic;
+    private Dictionary<TileIdentifier, Bounds> _tileBoundsDic;
 
-    private EditorCoroutine _mainRoutine; // 主协程
-    private EditorWaitForSeconds _waitSomeTime;
+    // 取tile的右侧与上侧
+    private Dictionary<TileIdentifier, TileConnection[]> _tileConnectionDic;
+    private List<NavMeshBuildSource> _navmeshBuildSourceList;
+    private List<NavMeshBuildMarkup> _navmeshBuildMarkupList;
+
+    private int _createdGraphCount;
+    public NavigationGraph navigationGraph;
+    public NavigationMapInfo mapInfo;
 
     private float _maxAngleCosine;
 
-
     private void Initialize()
     {
-        _haltonSequenceData = Resources.Load<TextAsset>("HaltonSequence");
         _config = Resources.Load<MapBakeConfig>("MapBakeConfig");
-        if (_haltonSequenceData == null || _config == null)
-        {
-            _inited = false;
-            return;
-        }
-        BinaryFormatter bf = new BinaryFormatter();
-        _haltonSequence = bf.Deserialize(new MemoryStream(_haltonSequenceData.bytes)) as HaltonSequenceData;
-
+        _haltonSequence = (HaltonSequenceData)Utility.DeserializeBinaryData("HaltonSequence");
         _bakeLinkSurface = new GameObject("BakeLinkSurface").AddComponent<NavMeshSurface>();
         _bakeTileOneSurface = new GameObject("BakeTileOneSurface").AddComponent<NavMeshSurface>();
         _bakeTileTwoSurface = new GameObject("BakeTileTwoSurface").AddComponent<NavMeshSurface>();
+        _bakeLinkSurface.RemoveData();
+        _bakeTileOneSurface.RemoveData();
+        _bakeTileTwoSurface.RemoveData();
 
         _bakeLinkArea = NavMesh.GetAreaFromName("BakeLink");
         _bakeTileOneArea = NavMesh.GetAreaFromName("BakeTileOne");
@@ -625,18 +776,35 @@ public class LinkNodeBakeWindow : EditorWindow
         _bakeTileTwoSurface.collectObjects = CollectObjects.Volume;
         _bakeTileTwoSurface.layerMask = _config.collectLayers;
 
+        _worldBound = new Bounds(new Vector3(0.5f * _config.mapSize.x, VERTICAL_POS_OFFSET_RATIO * _config.mapSize.y, 0.5f * _config.mapSize.z), _config.mapSize);
+        _maxAngleCosine = Mathf.Cos(_config.maxAngleAllowed);
+        _navmeshBuildSourceList = new List<NavMeshBuildSource>(1000);
+        _navmeshBuildMarkupList = new List<NavMeshBuildMarkup>(0);
+
+        _sectorCountX = Mathf.CeilToInt(_config.mapSize.x / _config.sectorSize.x);
+        _sectorCountZ = Mathf.CeilToInt(_config.mapSize.z / _config.sectorSize.z);
+
         _tileCountX = Mathf.CeilToInt(_config.mapSize.x / _config.tileSize.x);
         _tileCountZ = Mathf.CeilToInt(_config.mapSize.z / _config.tileSize.z);
         _tileCountTotal = _tileCountX * _tileCountZ;
-        _remainTiles = _tileCountTotal;
-        _tileIDNodeList = new List<GraphNode<TileIdentifier>>(_remainTiles);
 
-        _waitSomeTime = new EditorWaitForSeconds(0.001f);
-
-        _worldBound = new Bounds(new Vector3(0.5f * _config.mapSize.x, VERTICAL_POS_OFFSET_RATIO * _config.mapSize.y, 0.5f * _config.mapSize.z), _config.mapSize);
-
-        _maxAngleCosine = Mathf.Cos(_config.maxAngleAllowed);
-
+        _sectorList = new List<Vector2Int>();
+        if (_config.bakeAllSector)
+        {
+            for (int x = 0; x < _sectorCountX; x++)
+            {
+                for (int z = 0; z < _sectorCountZ; z++)
+                {
+                    _sectorList.Add(new Vector2Int(_sectorCountX - x - 1, _sectorCountZ - z - 1));
+                }
+            }
+        }
+        else
+        {
+            _sectorList = _config.sectorIndexList.
+                Where(index => { return index.x >= 0 && index.x < _sectorCountX && index.y >= 0 && index.y < _sectorCountZ; })
+                .ToList();
+        }
     }
 
     private void EditorUpdateCallback()
@@ -651,92 +819,119 @@ public class LinkNodeBakeWindow : EditorWindow
     // 整个烘焙流程
     private IEnumerator MainRoutine()
     {
-        _bakeTileOneSurface.BuildNavMesh();
-
-        yield return Stage_InitSerachGraph();
-        _bakeStage = EBakeStage.CollectTriangle;
-        yield return Stage_CollectTriangle();
-        _bakeStage = EBakeStage.SamplePoint;
-        yield return Stage_SamplePoint();
-
-        yield return Stage_ConstructPathNode();
+        for (int i = _sectorList.Count-1; i >=0 ;i--)
+        {
+            Vector2Int sector = _sectorList[i];
+            InitSectorParams(sector);
+            yield return null;
+            //_bakeTileOneSurface.BuildNavMesh();
+            yield return Stage_InitSerachGraph();
+            _bakeStage = EBakeStage.CollectTriangle;
+            yield return Stage_CollectTriangle();
+            _bakeStage = EBakeStage.SamplePoint;
+            yield return Stage_SamplePoint();
+            _bakeStage = EBakeStage.ConstructGraph;
+            yield return Stage_ConstructPathNode();
+            _guiProgressMsg = $">>>>>> Sector {sector} baking complete";
+            _bakedSector.Add(sector);
+        }
+        _guiProgressMsg = ">>> Map baking complete <<<";
     }
 
-    // 初始化图
+    private void InitSectorParams(Vector2Int sector)
+    {
+        _sectorOffsetX = sector.x * _config.sectorSize.x;
+        _sectorOffsetZ = sector.x * _config.sectorSize.z;
+        _tileIDNodeList = new List<GraphNode<TileIdentifier>>(_tileCountTotal);
+        _tileTriangleDic = new Dictionary<TileIdentifier, List<Triangle>>(_tileCountTotal);
+        _tileBoundsDic = new Dictionary<TileIdentifier, Bounds>(_tileCountTotal);
+        _tileConnectionDic = new Dictionary<TileIdentifier, TileConnection[]>(_tileCountTotal);
+    }
+
+    // 初始化图 
     private IEnumerator Stage_InitSerachGraph()
     {
         GUIClearProgress();
+
         for (int x = 0; x < _tileCountX; x++)
         {
             for (int z = 0; z < _tileCountZ; z++)
             {
-                _tileIDNodeList.Add(new GraphNode<TileIdentifier>(new TileIdentifier(x, z)));
+                TileIdentifier tileID = new TileIdentifier(x, z);
+                _tileIDNodeList.Add(new GraphNode<TileIdentifier>(tileID));
             }
         }
         _tileGraph = new UndirectedGraph<TileIdentifier>();
+        string guimsg = "Create tile graph...";
+        ResetThreadParams(_tileCountTotal);
+        yield return AssignThreadTasksRoutine(GetTileIdentifierForThread, (obj) => true, ConcurrentCreateGraph, guimsg);
 
+        // 多线程中，分配了task,但有一部分还是完全不执行，在这里重新初始化一次
         for (int x = 0; x < _tileCountX; x++)
         {
-            bool rightNeibourExist = x + 1 < _tileCountX;
-            bool leftNeibourExist = x - 1 > 0;
             for (int z = 0; z < _tileCountZ; z++)
             {
-                bool upNeibourExist = z + 1 < _tileCountZ;
-                bool bottomNeibourExist = z - 1 > 0;
-
-                if (leftNeibourExist)
+                TileIdentifier id = new TileIdentifier(x, z);
+                if (!_tileBoundsDic.ContainsKey(id))
                 {
-                    _tileGraph.AddPair(_tileIDNodeList[x * _tileCountZ + z], _tileIDNodeList[(x - 1) * _tileCountZ + z]);
+                    AddNodePair(id);
                 }
-
-                if (rightNeibourExist)
-                {
-                    _tileGraph.AddPair(_tileIDNodeList[x * _tileCountZ + z], _tileIDNodeList[(x + 1) * _tileCountZ + z]);
-                }
-
-                if (upNeibourExist)
-                {
-                    _tileGraph.AddPair(_tileIDNodeList[x * _tileCountZ + z], _tileIDNodeList[x * _tileCountZ + z + 1]);
-                }
-
-                if (bottomNeibourExist)
-                {
-                    _tileGraph.AddPair(_tileIDNodeList[x * _tileCountZ + z], _tileIDNodeList[x * _tileCountZ + z - 1]);
-                }
-                GUISetTileSucceed(x, z);
             }
-            GUIUpdateProgress((float)x / _tileCountZ, "Create tile graph");
-            yield return null;
+        }
+    }
+
+    private void ConcurrentCreateGraph(object obj)
+    {
+        TileIdentifier tileID = (TileIdentifier)obj;
+        AddNodePair(tileID);
+        GUISetTileSucceed(tileID);
+        lock (_locker)
+        {
+            _threadProcessedCount++;
+            _threadAvailableCount++;
+        }
+    }
+
+    private void AddNodePair(TileIdentifier tileID)
+    {
+        _tileBoundsDic[tileID] = new Bounds(GetTileCenterPosition(tileID), _config.tileSize);
+        _tileTriangleDic[tileID] = new List<Triangle>(100);
+        int x = tileID.coordX;
+        int z = tileID.coordZ;
+        bool rightNeibourExist = x + 1 < _tileCountX;
+        bool leftNeibourExist = x - 1 > 0;
+        bool upNeibourExist = z + 1 < _tileCountZ;
+        bool bottomNeibourExist = z - 1 > 0;
+        int index = x * _tileCountZ + z;
+        if (leftNeibourExist)
+        {
+            _tileGraph.AddPair(_tileIDNodeList[index], _tileIDNodeList[(x - 1) * _tileCountZ + z]);
+        }
+
+        if (rightNeibourExist)
+        {
+            _tileGraph.AddPair(_tileIDNodeList[index], _tileIDNodeList[(x + 1) * _tileCountZ + z]);
+        }
+
+        if (upNeibourExist)
+        {
+            _tileGraph.AddPair(_tileIDNodeList[index], _tileIDNodeList[x * _tileCountZ + z + 1]);
+        }
+
+        if (bottomNeibourExist)
+        {
+            _tileGraph.AddPair(_tileIDNodeList[index], _tileIDNodeList[x * _tileCountZ + z - 1]);
         }
     }
 
     // 收集三角形 
     private IEnumerator Stage_CollectTriangle()
     {
-        CollectTriangle_Init();
-        // Collect all mesh in world
-        //_navmeshBuildMarkupList.Clear();
-        //_navmeshBuildSourceList.Clear();
-        //// collect mesh
-        //NavMeshBuilder.CollectSourcesInStage(_worldBound, _config.collectLayers, NavMeshCollectGeometry.RenderMeshes,
-        //    _bakeTileOneArea, _navmeshBuildMarkupList, _bakeTileOneSurface.gameObject.scene, _navmeshBuildSourceList);
         Debug.Log(">>> Stage_CollectTriangle <<< Start");
 
         GUIClearProgress();
-        yield return Step_CollectTerrainTriangles();
-        Debug.Log("      Step_CollectTerrainTriangles Done");
-
-        GUIClearProgress();
-        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], Step_CollectTileTriangles);
-        Debug.Log("      Step_CollectTileTriangles Done");
-
-        GUIClearProgress();
-        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], Step_CollectTileConnectionTriangles);
+        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], Step_CollectTileConnectionTriangles, 64);
         Debug.Log("      Step_CollectTileConnectionTriangles Done");
-
-        GUIClearProgress();
-        yield return Step_RemoveIncorrectTrianglesInTile();
-        Debug.Log("      Step_RemoveIncorrectTrianglesInTile Done");
 
         GUIClearProgress();
         yield return Step_RemoveIncorrectTriangleInConnection();
@@ -771,8 +966,8 @@ public class LinkNodeBakeWindow : EditorWindow
     private IEnumerator Stage_ConstructPathNode()
     {
         Debug.Log(">>> Stage_ConstructPathNode <<< Start");
-
-        yield return null;
+        GUIClearProgress();
+        yield return Step_ConstructGraph();
 
         Debug.Log(">>> Stage_ConstructPathNode <<< Done");
     }
@@ -781,100 +976,7 @@ public class LinkNodeBakeWindow : EditorWindow
 
     #region ------------------------------------------------ Collect Triangles ----------------------------------------------------------
 
-    private bool[,] _tileBakedArray;
-    private Dictionary<TileIdentifier, List<Triangle>> _tileTriangleDic;
-    private Dictionary<TileIdentifier, Bounds> _tileBoundsDic;
-    // 取tile的右侧与上侧
-    private Dictionary<TileIdentifier, TileConnection[]> _tileConnectionDic;
-    private List<NavMeshBuildSource> _navmeshBuildSourceList;
-    private List<NavMeshBuildMarkup> _navmeshBuildMarkupList;
-    private List<Triangle> _terrainTriangleList = new List<Triangle>(20400);
-    private float[,] _terrainHeightCacheArray;
-    private int _terrainHeightMaxX;
-    private int _terrainHeightMaxZ;
-    private int _collectProgressCount = 0;
-
-    // 收集三角形阶段 初始化变量
-    private void CollectTriangle_Init()
-    {
-        _tileTriangleDic = new Dictionary<TileIdentifier, List<Triangle>>(_tileCountTotal);
-        _tileBoundsDic = new Dictionary<TileIdentifier, Bounds>(_tileCountTotal);
-        _tileConnectionDic = new Dictionary<TileIdentifier, TileConnection[]>(_tileCountTotal);
-        _navmeshBuildSourceList = new List<NavMeshBuildSource>(1000);
-        _navmeshBuildMarkupList = new List<NavMeshBuildMarkup>(0);
-        _terrainTriangleList = new List<Triangle>(100);
-        _terrainHeightMaxX = Mathf.CeilToInt(_config.mapSize.x * 2.0f);
-        _terrainHeightMaxZ = Mathf.CeilToInt(_config.mapSize.z * 2.0f);
-        _terrainHeightCacheArray = new float[_terrainHeightMaxX, _terrainHeightMaxZ];
-    }
-
-
-    // Collect Triangle : Step 0 Prepare terrain
-    private IEnumerator Step_CollectTerrainTriangles()
-    {
-        GUIUpdateProgress(0f, "Wait for sample terrain height");
-        yield return null;
-        for (int x = 0; x < _terrainHeightMaxX; x++)
-        {
-            for (int z = 0; z < _terrainHeightMaxZ; z++)
-            {
-                Vector3 pos = new Vector3(x * 0.5f + 0.25f, 0, z * 0.5f + 0.25f);
-                _terrainHeightCacheArray[x, z] = Utility.GetTerrainHeight(pos);
-            }
-        }
-        GUIUpdateProgress(0.35f, "Wait for build terrain navmesh");
-        yield return null;
-        NavMeshSurface surf = GenerateTerrainTriangles();
-        //yield return new EditorWaitForSeconds(2f);
-        NavMeshTriangulation triangles = NavMesh.CalculateTriangulation();
-        for (int i = 0; i < triangles.indices.Length; i += 3)
-        {
-            Triangle triangle = new Triangle(
-                   triangles.vertices[triangles.indices[i]],
-                   triangles.vertices[triangles.indices[i + 1]],
-                   triangles.vertices[triangles.indices[i + 2]]
-                );
-            triangle.isTerrainTriangle = true;
-            _terrainTriangleList.Add(triangle);
-            GUIUpdateProgress((float)i / triangles.indices.Length, "Collect terrain triangles", false);
-        }
-        yield return null;
-        surf.RemoveData();
-        DestroyImmediate(surf.gameObject);
-        Debug.Log("Terrain Triangle Count " + _terrainTriangleList.Count);
-    }
-
-    private NavMeshSurface GenerateTerrainTriangles()
-    {
-        GameObject navmeshSurface = new GameObject("BakeTerrainTriangles");
-        NavMeshSurface surf = navmeshSurface.AddComponent<NavMeshSurface>();
-        surf.name = "";
-        surf.center = _worldBound.center;
-        surf.size = _worldBound.size;
-        surf.overrideVoxelSize = true;
-        surf.voxelSize = 0.5f;
-        surf.collectObjects = CollectObjects.All;
-        surf.layerMask = LayerMask.GetMask("Terrain");
-        surf.BuildNavMesh();
-        return surf;
-    }
-
     // Collect Triangle : Step 1
-    private void Step_CollectTileTriangles(GraphNode<TileIdentifier> node)
-    {
-        // init
-        TileIdentifier tileID = node.value;
-        _tileBoundsDic[tileID] = new Bounds(GetTileCenterPosition(tileID), _config.tileSize);
-        _tileTriangleDic[tileID] = new List<Triangle>(100);
-        //GetTrianglesInBound(_tileBoundsDic[tileID], _tileTriangleDic[tileID]);
-
-        //------Debug info-------------
-        _collectProgressCount++;
-        GUISetTileSucceed(tileID.coordX, tileID.coordZ);
-        GUIUpdateProgress((float)_collectProgressCount / _tileGraph.nodeCount, "[Collect Triangle] Get triangle from tile range.");
-    }
-
-    // Collect Triangle : Step 2
     private void Step_CollectTileConnectionTriangles(GraphNode<TileIdentifier> node)
     {
         TileIdentifier tileID = node.value;
@@ -912,19 +1014,7 @@ public class LinkNodeBakeWindow : EditorWindow
         GUIUpdateProgress((float)_tileConnectionDic.Count / (_tileCountTotal - 1), "[Collect Triangle] Get triangle from connection range.");
     }
 
-    // Collect Triangle : Step 3
-    private IEnumerator Step_RemoveIncorrectTrianglesInTile()
-    {
-        string guimsg = "[Collect Triangle] Remove useless triangles in tile";
-        ResetThreadParams(_tileCountTotal);
-        yield return AssignThreadTasksRoutine(
-            GetTileIdentifierForThread,
-            (obj) => { return true; },
-            ConcurrentRemoveTriangleInTile,
-            guimsg);
-    }
-
-    // Collect Triangle : Step 4
+    // Collect Triangle : Step 2
     private IEnumerator Step_RemoveIncorrectTriangleInConnection()
     {
         string guiMsg = "[Collect Triangle] Remove useless triangles in connection";
@@ -1023,10 +1113,10 @@ public class LinkNodeBakeWindow : EditorWindow
         Vector3[] vertices = mesh.vertices;
         for (int i = 0; i < vertices.Length; i++)
         {
-            vertices[i] = source.transform.MultiplyPoint(vertices[i]);
+            vertices[i] = source.transform.MultiplyPoint3x4(vertices[i]);
         }
 
-        Bounds meshBound = new Bounds(source.transform.MultiplyPoint(mesh.bounds.center), mesh.bounds.size);
+        Bounds meshBound = new Bounds(source.transform.MultiplyPoint3x4(mesh.bounds.center), mesh.bounds.size);
 
         if (tileBound.Intersects(meshBound) == false)
         {
@@ -1051,29 +1141,6 @@ public class LinkNodeBakeWindow : EditorWindow
         }
     }
 
-    private void ConcurrentRemoveTriangleInTile(object tileIdentifier)
-    {
-        TileIdentifier tileID = (TileIdentifier)tileIdentifier;
-        Bounds bound = _tileBoundsDic[tileID];
-        int deleteCount = 0;
-        int totalCount = _tileTriangleDic[tileID].Count;
-        for (int i = _tileTriangleDic[tileID].Count - 1; i >= 0; i--)
-        {
-            if (!TriangleBoundsIntersect(bound, _tileTriangleDic[tileID][i]))
-            {
-                deleteCount++;
-                _tileTriangleDic[tileID].RemoveAt(i);
-            }
-        }
-        //Debug.Log($"{tileID} Total {totalCount} Delete {deleteCount}");
-        GUISetTileSucceed(tileID.coordX, tileID.coordZ);
-        lock (_locker)
-        {
-            _threadProcessedCount++;
-            _threadAvailableCount++;
-        }
-    }
-
     private void ConcurrentRemoveTriangleInConnection(object tileIdentifier)
     {
         TileIdentifier tileID = (TileIdentifier)tileIdentifier;
@@ -1090,15 +1157,6 @@ public class LinkNodeBakeWindow : EditorWindow
                 if (!TriangleBoundsIntersect(bound, tileConnections[i].triangleList[triangleIndex]))
                 {
                     tileConnections[i].triangleList.RemoveAt(triangleIndex);
-                }
-            }
-
-            // Add Terrian Triangles
-            for (int j = 0; j < _terrainTriangleList.Count; j++)
-            {
-                if (TriangleBoundsIntersect(bound, _terrainTriangleList[j]))
-                {
-                    tileConnections[i].triangleList.Add(_terrainTriangleList[j]);
                 }
             }
         }
@@ -1152,15 +1210,12 @@ public class LinkNodeBakeWindow : EditorWindow
 
     private bool IsSeparateAxi(Vector3 axi, Vector3 aabbExtent, Vector3 v0, Vector3 v1, Vector3 v2)
     {
-        Vector3 u0 = new Vector3(1.0f, 0f, 0f);
-        Vector3 u1 = new Vector3(0, 1.0f, 0);
-        Vector3 u2 = new Vector3(0, 0, 1.0f);
         float p0 = Vector3.Dot(v0, axi);
         float p1 = Vector3.Dot(v1, axi);
         float p2 = Vector3.Dot(v2, axi);
-        float r = aabbExtent.x * Mathf.Abs(Vector3.Dot(u0, axi)) +
-                  aabbExtent.y * Mathf.Abs(Vector3.Dot(u1, axi)) +
-                  aabbExtent.z * Mathf.Abs(Vector3.Dot(u2, axi));
+        float r = aabbExtent.x * Mathf.Abs(Vector3.Dot(Vector3.right, axi)) +
+                  aabbExtent.y * Mathf.Abs(Vector3.Dot(Vector3.up, axi)) +
+                  aabbExtent.z * Mathf.Abs(Vector3.Dot(Vector3.forward, axi));
 
         // aabb投影区间[-r,r] 三角形投影区间[min(p0,p1,p2),max(p0,p1,p2)],如果两个区间没有交集则是分离轴
         // 这里的比较是一种高效方式 代替 if(min > r || max < -r)
@@ -1178,7 +1233,6 @@ public class LinkNodeBakeWindow : EditorWindow
 
     #region ------------------------------------------- Sample Point----------------------------------------------------------------
 
-    private Dictionary<TileIdentifier, NavMeshData> _cachedNavmeshDataDic;
     private Vector3 _voxelSizeInv = new Vector3(2f, 0.5f, 2f); // voxel size 0.25,2,0.25
     // Sample Point : Step 1
     private IEnumerator Step_PickRandomPointInTriangle()
@@ -1196,11 +1250,7 @@ public class LinkNodeBakeWindow : EditorWindow
     private void ConcurrentRandomPoint(object obj)
     {
         TileIdentifier tileID = (TileIdentifier)obj;
-        if (!_tileConnectionDic.ContainsKey(tileID))
-        {
-            // do nothing
-        }
-        else
+        if (_tileConnectionDic.ContainsKey(tileID))
         {
             TileConnection[] tileConnections = _tileConnectionDic[tileID];
             for (int i = 0; i < tileConnections.Length; i++)
@@ -1224,7 +1274,7 @@ public class LinkNodeBakeWindow : EditorWindow
                         Vector3 pos = u * triangle.vertA + v * triangle.vertB + w * triangle.vertC;
                         if (triangle.isTerrainTriangle)
                         {
-                            pos.y = GetTerrainHeight(pos);
+                            pos.y = _terrianHeightSampler.GetTerrainHeight(pos);
                         }
                         if (bound.Contains(pos))
                         {
@@ -1387,10 +1437,9 @@ public class LinkNodeBakeWindow : EditorWindow
     // Sample Point : Step 3
     private IEnumerator Step_CheckRegionConnectivity()
     {
-        _cachedNavmeshDataDic = new Dictionary<TileIdentifier, NavMeshData>(_tileCountTotal);
         _navMeshPath = new NavMeshPath();
-        int totalCount = _tileConnectionDic.Count;
         int currentCount = 0;
+        int lastCount = 0;
         foreach (KeyValuePair<TileIdentifier, TileConnection[]> pair in _tileConnectionDic)
         {
             for (int tileConnectionIndex = 0; tileConnectionIndex < pair.Value.Length; tileConnectionIndex++)
@@ -1398,12 +1447,6 @@ public class LinkNodeBakeWindow : EditorWindow
                 TileConnection tileConnection = pair.Value[tileConnectionIndex];
                 TileIdentifier[] connectedTiles = tileConnection.connectedTiles;
                 BakeNavmesh(_bakeLinkSurface, tileConnection.bound.center, tileConnection.bound.size);
-                // Save baked navmesh data
-                tileConnection.cachedNavmeshData = _bakeLinkSurface.navMeshData;
-                //BakeNavmesh(_bakeTileOneSurface, _tileBoundsDic[connectedTiles[0]].center, _tileBoundsDic[connectedTiles[0]].size);
-                //BakeNavmesh(_bakeTileTwoSurface, _tileBoundsDic[connectedTiles[1]].center, _tileBoundsDic[connectedTiles[1]].size);
-                //_cachedNavmeshDataDic[tileConnection.connectedTiles[0]] = _bakeTileOneSurface.navMeshData;
-                //_cachedNavmeshDataDic[tileConnection.connectedTiles[0]] = _bakeTileTwoSurface.navMeshData;
                 Bounds tileOneBound = _tileBoundsDic[connectedTiles[0]];
                 Bounds tileTwoBound = _tileBoundsDic[connectedTiles[1]];
                 // Remove not in navmesh points
@@ -1412,9 +1455,14 @@ public class LinkNodeBakeWindow : EditorWindow
                     for (int j = tileConnection.regionList[i].downsamplePoints.Count - 1; j >= 0; j--)
                     {
                         Vector3 pos = tileConnection.regionList[i].downsamplePoints[j];
-                        if (!NavMesh.SamplePosition(pos, out NavMeshHit hit, 0.15f, _bakeLinkMask))
+                        if (!NavMesh.SamplePosition(pos, out NavMeshHit hit, NAVMESH_SAMPLE_RADIUS, _bakeLinkMask))
                         {
                             tileConnection.regionList[i].downsamplePoints.RemoveAt(j);
+                        }
+                        else
+                        {
+                            // 如果该位置可以采样到navmesh，则存储navmesh采样点位置
+                            tileConnection.regionList[i].downsamplePoints[j] = hit.position;
                         }
                     }
                 }
@@ -1433,27 +1481,29 @@ public class LinkNodeBakeWindow : EditorWindow
 
                 for (int i = tileConnection.regionList.Count - 1; i >= 0; i--)
                 {
-                    if (tileConnection.regionList[i].downsamplePoints == null)
+                    if (tileConnection.regionList[i].downsamplePoints == null ||
+                        tileConnection.regionList[i].downsamplePoints.Count == 0)
                     {
                         tileConnection.regionList.RemoveAt(i);
                     }
-                    else if (tileConnection.regionList[i].downsamplePoints.Count == 0)
-                    {
-                        tileConnection.regionList.RemoveAt(i);
-                    }
+                    //else if (tileConnection.regionList[i].downsamplePoints.Count == 0)
+                    //{
+                    //    tileConnection.regionList.RemoveAt(i);
+                    //}
                 }
 
                 // Split region to subregions inside different tile.
                 foreach (BakedRegion region in tileConnection.regionList)
                 {
-                    if (region.downsamplePoints == null)
-                    {
-                        continue;
-                    }
+                    //if (region.downsamplePoints == null)
+                    //{
+                    //    continue;
+                    //}
                     if (region.downsamplePoints.Count <= 1)
                     {
                         continue;
                     }
+                    // 将点划分到各自属于的区块
                     foreach (Vector3 point in region.downsamplePoints)
                     {
                         if (NavMesh.SamplePosition(point, out NavMeshHit hitInfo, NAVMESH_SAMPLE_RADIUS, _bakeLinkMask))
@@ -1482,12 +1532,15 @@ public class LinkNodeBakeWindow : EditorWindow
                     }
                     //Debug.Log($"Region{region.regionID} Sub A {region.subregionAPoints.Count} Sub B {region.subregionBPoints.Count} ");
                 }
+            }
+            GUISetTileSucceed(pair.Key); 
+            currentCount++;
+            if (currentCount - lastCount > 32)
+            {
+                lastCount = currentCount;
+                GUIUpdateProgress((float)currentCount / _tileCountTotal - 1, "[Sample Point] Check point connectivity");
                 yield return null;
             }
-
-            currentCount++;
-            GUISetTileSucceed(pair.Key);
-            GUIUpdateProgress((float)currentCount / totalCount, "[Sample Point] Check point connectivity");
         }
     }
 
@@ -1497,13 +1550,12 @@ public class LinkNodeBakeWindow : EditorWindow
         {
             return false;
         }
-
         if (regionA.downsamplePoints.Count == 0 || regionB.downsamplePoints.Count == 0)
         {
             return false;
         }
 
-        NavMesh.CalculatePath(regionA.GetFirstSamplePos(), regionB.GetFirstSamplePos(), _bakeLinkMask, _navMeshPath);
+        NavMesh.CalculatePath(regionA.downsamplePoints[0], regionB.downsamplePoints[0], _bakeLinkMask, _navMeshPath);
         if (_navMeshPath.status == NavMeshPathStatus.PathComplete)
         {
             return true;
@@ -1563,24 +1615,31 @@ public class LinkNodeBakeWindow : EditorWindow
 
     #region -----------------------------------------------Create Node Graph-------------------------------------------------------------------------
 
-    public UndirectedGraph<LinkPoint> pathfindingGraph;
-
     private IEnumerator Step_ConstructGraph()
     {
-        pathfindingGraph = new UndirectedGraph<LinkPoint>();
-        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], ConnectGraphNodes);
+        navigationGraph = new NavigationGraph();
+        yield return _tileGraph.IterateBFSCoroutine(_tileIDNodeList[0], ConnectGraphNodes, 32);
+        mapInfo = new NavigationMapInfo(_config.mapSize, _config.tileSize);
+        mapInfo.navigationGraph = navigationGraph;
+        string path = $"Assets/Tutorial/Pathfinding/Resources/{_config.mapInfoFileSaveName}.bytes";
+        Utility.SerializeBinaryData<NavigationMapInfo>(mapInfo, path);
+        AssetDatabase.Refresh();
+        EditorUtility.DisplayDialog("地图烘焙", $"地图烘焙完成，保存在{path}", "Ok");
     }
 
+    private List<BakedPoint> _tileOwnerPointCacheList = new List<BakedPoint>(10);
     private void ConnectGraphNodes(GraphNode<TileIdentifier> idNode)
     {
+        _tileOwnerPointCacheList.Clear();
         TileIdentifier tileID = idNode.value;
 
         bool connectLeft = false;
         bool connectBottom = false;
         if (tileID.coordX == 0 && tileID.coordZ == 0)
         {
-          
-        }else if (tileID.coordX == 0)
+
+        }
+        else if (tileID.coordX == 0)
         {
             connectBottom = true;
         }
@@ -1594,22 +1653,72 @@ public class LinkNodeBakeWindow : EditorWindow
             connectBottom = true;
         }
 
-        BakeNavmesh(_bakeTileOneSurface, _tileBoundsDic[tileID].center, _tileBoundsDic[tileID].size);
-        //_cachedNavmeshDataDic[tileConnection.connectedTiles[0]] = _bakeTileOneSurface.navMeshData;
-        if (_tileConnectionDic.ContainsKey(tileID))
+        // 烘焙Navmesh时比实际区块宽一点点，便于处理穿越点恰好处于边界的情况
+        BakeNavmesh(_bakeTileOneSurface, _tileBoundsDic[tileID].center, _tileBoundsDic[tileID].size + new Vector3(0.5f, 0, 0.5f));
+
+        // 连接跨区域的点 
+        TileConnection[] tileConnections = GetTileConnections(tileID);
+        if (tileConnections != null)
         {
-            foreach (TileConnection tileConnect in _tileConnectionDic[tileID])
+            foreach (TileConnection tileConnect in tileConnections)
             {
                 foreach (BakedRegion tRegion in tileConnect.regionList)
                 {
-                    pathfindingGraph.AddPair(new GraphNode<LinkPoint>(tRegion.bakedPointA.GetLinkPoint()),
-                        new GraphNode<LinkPoint>(tRegion.bakedPointB.GetLinkPoint()),
-                        tRegion.distanceAB);
+                    if (tRegion.bakedPointA != null && tRegion.bakedPointB != null)
+                    {
+                        float dist = Vector3.Distance(tRegion.bakedPointA.pos, tRegion.bakedPointB.pos);
+                        navigationGraph.AddPair(tRegion.bakedPointA.ToGraphNode(), tRegion.bakedPointB.ToGraphNode(), dist);
+                    }
                 }
+
+                // 将连接处中属于当前处理区块的点存下来
+                tileConnect.GetBakedPointInTile(tileID, _tileOwnerPointCacheList);
             }
         }
 
-    }
+        // 查找左侧与下侧属于该区块的连接点
+        if (connectBottom)
+        {
+            TileIdentifier bottomNeibourID = new TileIdentifier(tileID.coordX, tileID.coordZ - 1);
+            tileConnections = GetTileConnections(bottomNeibourID);
+            foreach (TileConnection tConnection in tileConnections)
+            {
+                //将连接处中属于当前处理区块的点存下来
+                tConnection.GetBakedPointInTile(tileID, _tileOwnerPointCacheList);
+            }
+        }
 
+        if (connectLeft)
+        {
+            TileIdentifier leftNeibourID = new TileIdentifier(tileID.coordX - 1, tileID.coordZ);
+            tileConnections = GetTileConnections(leftNeibourID);
+            foreach (TileConnection tConnection in tileConnections)
+            {
+                //将连接处中属于当前处理区块的点存下来
+                tConnection.GetBakedPointInTile(tileID, _tileOwnerPointCacheList);
+            }
+        }
+
+        // 在图中连接可通行的点
+        for (int i = 0; i < _tileOwnerPointCacheList.Count; i++)
+        {
+            BakedPoint pointA = _tileOwnerPointCacheList[i];
+            for (int j = i + 1; j < _tileOwnerPointCacheList.Count; j++)
+            {
+                BakedPoint pointB = _tileOwnerPointCacheList[j];
+                NavMesh.CalculatePath(pointA.position, pointB.position, _bakeTileOneMask, _navMeshPath);
+
+                if (_navMeshPath.status == NavMeshPathStatus.PathComplete)
+                {
+                    float dist = Vector3.Distance(pointA.pos, pointB.pos);
+                    navigationGraph.AddPair(pointA.ToGraphNode(), pointB.ToGraphNode(), dist);
+                }
+            }
+            navigationGraph.AddNodeToTile(tileID, _tileOwnerPointCacheList[i].ToGraphNode());
+        }
+        _createdGraphCount++;
+        GUISetTileSucceed(tileID);
+        GUIUpdateProgress((float)_createdGraphCount / (_tileCountTotal - 1), "Construct Graph ...");
+    }
     #endregion
 }

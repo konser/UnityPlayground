@@ -2,8 +2,8 @@
 
 [System.Serializable]
 public class Box3i {
-    public MyVec3 minP;
-    public MyVec3 maxP;
+    public SerializableVec3 minP;
+    public SerializableVec3 maxP;
     public float xRange;
     public float yRange;
     public float zRange;

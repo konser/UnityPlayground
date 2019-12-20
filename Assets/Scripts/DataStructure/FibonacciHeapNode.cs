@@ -11,14 +11,22 @@ namespace FibonacciHeap
     /// Has to implement the <see cref="IComparable"/> interface.</typeparam>
     public class FibonacciHeapNode<T, TKey> where TKey: IComparable<TKey>
     {
+        public FibonacciHeapNode()
+        {
+
+        }
         public FibonacciHeapNode(T data, TKey key)
+        {
+            SetNewValue(data, key);
+        }
+
+        public void SetNewValue(T data, TKey key)
         {
             Right = this;
             Left = this;
             Data = data;
             Key = key;
         }
-
         /// <summary>
         /// Gets or sets the node data object.
         /// </summary>

@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+
 public static class Utility
 {
     public static Vector3 XZ(this Vector3 v)
@@ -218,6 +221,31 @@ public static class Utility
         }
         indexList.Add(new Vector2Int((int)end.x, (int)end.z));
     }
+
+    public static void SerializeBinaryData<T>(object data,string path)
+    {
+        using (System.IO.MemoryStream ms = new MemoryStream())
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            bf.Serialize(ms, data);
+            byte[] bytes = ms.ToArray();
+            File.WriteAllBytes(path, bytes);
+        }
+    }
+
+    public static object DeserializeBinaryData(string resourcePath)
+    {
+        TextAsset bytesTextAsset = Resources.Load<TextAsset>(resourcePath);
+        if (bytesTextAsset == null)
+        {
+            Debug.LogError($"Wrong resource path for file : {resourcePath}");
+            return null;
+        }
+        BinaryFormatter bf = new BinaryFormatter();
+        object data = bf.Deserialize(new MemoryStream(bytesTextAsset.bytes));
+        return data;
+    }
+
     #region Debug draw
 
     public static void DrawGreenUpLine(Vector3 pos, float time)
